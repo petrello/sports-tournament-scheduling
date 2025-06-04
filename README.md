@@ -4,11 +4,11 @@
 > course at Alma Mater Studiorum - University of Bologna.
 
 **Authors**
-- Dotti Andrea
-- Petrelli Tommaso
+- Dotti Andrea [[_Github profile_](https://github.com/AndreaD002)][[_Institutional_ _email_](mailto:@studio.unibo.it)]
+- Petrelli Tommaso [[_Github profile_](https://github.com/petrello)][[_Institutional_ _email_](mailto:tommaso.petrelli2@studio.unibo.it)]
 
 ## STS problem description
-The aim of this project is to solve the Sports Tournament Scheduling (STS)
+The aim of this project is to solve the Sports Tournament Scheduling (STS)s
 problem, defined as follows.  A tournament involving $n$ teams is scheduled
 over $n − 1$ weeks, with each week divided into $\frac{n}{2}$ periods 
 (assuming that $n$ is even), and each period consists of two slots. 
