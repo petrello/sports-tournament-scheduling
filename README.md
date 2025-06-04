@@ -50,3 +50,26 @@ conducting an experimental study using different search strategies
 to assess the performance of the solvers. The experimental study
 will consider progressively larger values of $n$ for which 
 a solution can be obtained within the time limit, i.e. $5$ minutes.
+
+## Repository structure
+
+```
+.
+├── res         
+|   ├── CP              # Stores the results of CP optimization technology 
+|   ├── SAT             # Stores the results of SAT optimization technology    
+|   ├── SMT             # Stores the results of SMT optimization technology
+│   └── MIP             # Stores the results of MIP optimization technology
+├── source
+|   ├── CP              # Contains the source code for CP optimization technology
+|   ├── SAT             # Contains the source code for SAT optimization technology
+|   ├── SMT             # Contains the source code for SMT optimization technology
+│   └── MIP             # Contains the source code for MIP optimization technology
+├── .gitignore
+├── check_solution.py   # Checks the correctness of the computed solutions 
+├── LICENSE
+└── README.md
+```
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
