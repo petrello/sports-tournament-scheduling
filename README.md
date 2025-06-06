@@ -4,7 +4,7 @@
 > course at Alma Mater Studiorum - University of Bologna.
 
 **Authors**
-- Dotti Andrea [[_Github profile_](https://github.com/AndreaD002)][[_Institutional_ _email_](mailto:@studio.unibo.it)]
+- Dotti Andrea [[_Github profile_](https://github.com/AndreaD002)][[_Institutional_ _email_](mailto:andrea.dotti4@studio.unibo.it)]
 - Petrelli Tommaso [[_Github profile_](https://github.com/petrello)][[_Institutional_ _email_](mailto:tommaso.petrelli2@studio.unibo.it)]
 
 ## STS problem description
