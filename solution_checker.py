@@ -116,6 +116,6 @@ if __name__ == '__main__':
 
         for approach, result in json_data.items():
             sol = result.get("sol")
-            message = check_solution(sol, optional_constraint=False)
+            message = check_solution(sol)
             status = "VALID" if type(message) == str else "INVALID"
             print(f"Approach: {approach}\n  Status: {status}\n  Reason: {message if status == 'VALID' else '\n\t  '.join(message)}\n")
