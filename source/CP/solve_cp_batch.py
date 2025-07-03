@@ -30,15 +30,12 @@ def main():
         type=str
     )
     parser.add_argument(
-        "test_names",
-        help="List of test names (comma-separated)", 
+        "test_name",
+        help="Name for the test (used as JSON key)",
         type=str
     )
     
     args = parser.parse_args()
-    
-    # Parse test names
-    test_names_list = [name.strip() for name in args.test_names.split(',')]
     
     # Find all .dzn files in the instances directory
     dzn_pattern = os.path.join(args.instances_path, "*.dzn")
@@ -51,20 +48,12 @@ def main():
     # Sort files for consistent ordering
     dzn_files.sort()
     
-    print(f"Found {len(dzn_files)} instance files")
-    print(f"Test names: {test_names_list}")
-    
-    if len(dzn_files) != len(test_names_list):
-        print(f"Error: Number of instances ({len(dzn_files)}) doesn't match number of test names ({len(test_names_list)})")
-        return 1
-    
     # Process each instance
     for i, dzn_file in enumerate(dzn_files):
         # Extract instance_id from filename (remove .dzn extension)
         instance_id = os.path.splitext(os.path.basename(dzn_file))[0]
-        test_name = test_names_list[i]
         
-        print(f"\nProcessing instance {i+1}/{len(dzn_files)}: {instance_id} -> {test_name}")
+        print(f"\nProcessing instance {i+1}/{len(dzn_files)}")
         
         # Build command to call the CP solver script
         cmd = [
@@ -72,7 +61,7 @@ def main():
             instance_id,
             str(args.model_path),
             args.cp_solver,
-            test_name,
+            args.test_name,
         ]
         
         # Execute the command

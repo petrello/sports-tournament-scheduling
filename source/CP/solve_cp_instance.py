@@ -38,7 +38,7 @@ def solve_cp_instance(instance_id, model_path, cp_solver, test_name, timeout=300
     start_time = time.time()
     
     try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=timeout + 10)
+        result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
         elapsed_time = time.time() - start_time
         
         if result.returncode == 0:
