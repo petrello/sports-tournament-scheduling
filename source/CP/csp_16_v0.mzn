@@ -14,24 +14,23 @@ int: P = n div 2;                % periods / rows
 
 set of int: Teams   = 1..n;
 set of int: Weeks   = 1..W;
-set of int: Matches = 1..P;
 set of int: Periods = 1..P;
 
 /* Round-robin pairing created once with the classic
    circle-method formula.  A[w,m] plays at home vs B[w,m]. */
-array[Weeks, Matches] of int: A =
-  array2d(Weeks, Matches,
-    [ if m = 1 then n                        % pivot team
-      else ((w-1)+(m-1)) mod (n-1) + 1
+array[Weeks, Periods] of int: A =
+  array2d(Weeks, Periods,
+    [ if p = 1 then n                        % pivot team
+      else ((w-1)+(p-1)) mod (n-1) + 1
       endif
-    | w in Weeks, m in Matches ]);
+    | w in Weeks, p in Periods ]);
 
-array[Weeks, Matches] of int: B =
-  array2d(Weeks, Matches,
-    [ if m = 1 then w                        % pivot’s opponent
-      else ((n-1)-(m-1)+(w-1)) mod (n-1) + 1
+array[Weeks, Periods] of int: B =
+  array2d(Weeks, Periods,
+    [ if p = 1 then w                        % pivot’s opponent
+      else ((n-1)-(p-1)+(w-1)) mod (n-1) + 1
       endif
-    | w in Weeks, m in Matches ]);
+    | w in Weeks, p in Periods ]);
 
 %------------------------------------------------------------
 % 2)  DECISION VARIABLES
