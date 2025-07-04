@@ -14,9 +14,11 @@ import math
 
 def parse_minizinc_output(output_text):
     """Parse MiniZinc output to extract solution matrix"""
+    
     try:
         return eval(''.join(c for c in output_text if c not in '-').strip())
-    except:
+    except Exception as e:
+        print(e)
         return None
 
 def solve_cp_instance(instance_id, model_path, cp_solver, test_name, timeout=300):
