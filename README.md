@@ -71,5 +71,30 @@ a solution can be obtained within the time limit, i.e. $5$ minutes.
 └── README.md
 ```
 
+## Run Docker container
+If you want to use and test the models available in this repository, you can
+build and run the Docker container by following the steps below.
+
+0. You have cloned this repository on your local machine. For example:
+    ```bash
+    $ git clone https://github.com/petrello/sports-tournament-scheduling.git
+    ```
+
+1. Build the Docker container image by running:
+    ```bash
+    $ docker build -t sports-tournament-scheduling .
+    ```
+
+2. Start the Docker container image in interactive mode by running:
+    ```bash
+    $ docker run -it sports-tournament-scheduling
+    ```
+
+### Run inside the container
+To download a certain folder locally in your how machine run
+```bash
+docker cp <container_name>:docker_source_path host_dest_path
+```
+
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
