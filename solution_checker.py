@@ -29,22 +29,24 @@ def fatal_errors(solution, obj, time, optimal, teams):
         fatal_errors.append('The solution should be a list!!!')
         return fatal_errors
 
-    n = max(teams)
+    if len(solution) > 0:
 
-    if any([t not in set(teams) for t in range(1,n+1)]):
-        fatal_errors.append(f'Missing team in the solution or team out of range!!!')
+        n = max(teams)
 
-    if n%2 != 0:
-        fatal_errors.append(f'"n" should be even!!!')
+        if any([t not in set(teams) for t in range(1,n+1)]):
+            fatal_errors.append(f'Missing team in the solution or team out of range!!!')
 
-    if len(solution) != n//2:
-        fatal_errors.append(f'the number of periods is not compliant!!!')
+        if n%2 != 0:
+            fatal_errors.append(f'"n" should be even!!!')
 
-    if any([len(s) != n - 1 for s in solution]):
-        fatal_errors.append(f'the number of weeks is not compliant!!!')
+        if len(solution) != n//2:
+            fatal_errors.append(f'the number of periods is not compliant!!!')
 
-    if time > 300:
-        fatal_errors.append(f'The running time exceeds the timeout!!!')
+        if any([len(s) != n - 1 for s in solution]):
+            fatal_errors.append(f'the number of weeks is not compliant!!!')
+
+        if time > 300:
+            fatal_errors.append(f'The running time exceeds the timeout!!!')
 
     return fatal_errors
 
