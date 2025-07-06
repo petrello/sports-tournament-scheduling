@@ -58,7 +58,8 @@ def solve_cp_instance(instance_id, model_path, cp_solver, test_name, timeout=300
         else:
             raise Exception(
                 "Error occoured while running the MiniZinc solver.",
-                f"CODE: {result.returncode}"
+                f"CODE: {result.returncode}",
+                f"DETAILS: {result.stdout}"
             )    
     except subprocess.TimeoutExpired:
         elapsed_time = time.time() - start_time
