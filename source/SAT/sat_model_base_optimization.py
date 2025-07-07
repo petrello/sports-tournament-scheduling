@@ -21,35 +21,11 @@ from z3 import (
     Int, IntVal, sat, And, AtLeast
 )
 
-from z3 import Solver, Bool, Not, Or, And
-
-
-def sequential_at_most_2(opt: Optimize, xs: list[Bool], prefix: str):
-    n = len(xs)
-    # s[i][j] per i in 1..n, j in 1..2
-    s = {(i, j): Bool(f"{prefix}_s_{i}_{j}")
-         for i in range(1, n + 1) for j in (1, 2)}
-
-    # Base i=1
-    opt.add(Or(Not(xs[0]), s[(1, 1)]))  # x1 -> s[1,1]
-    opt.add(Not(s[(1, 2)]))  # ¬s[1,2]
-
-    for i in range(2, n + 1):
-        # persist persistence s[i-1][j] -> s[i][j]
-        for j in (1, 2):
-            opt.add(Or(Not(s[(i - 1, j)]), s[(i, j)]))
-        # x_i -> s[i][1]
-        opt.add(Or(Not(xs[i - 1]), s[(i, 1)]))
-        # s[i-1][j-1] ∧ x_i -> s[i][j]
-        opt.add(Or(Not(And(s[(i - 1, 1)], xs[i - 1])), s[(i, 2)]))
-        # ¬(s[i-1][2] ∧ x_i)
-        opt.add(Or(Not(s[(i - 1, 2)]), Not(xs[i - 1])))
-
+from z3 import Bool, Not, Or, And
 
 # --------------------------------------------------------------------------- #
 # helper: sequential “exactly-one”  (Or ∧ AtMost 1)
 # --------------------------------------------------------------------------- #
-
 def exactly_one(bool_vars):
     """Z3 encoding of "Exactly k" over bool_vars."""
     return And(AtLeast(*bool_vars, 1), AtMost(*bool_vars, 1))
@@ -84,11 +60,12 @@ def circle_tables(n: int):
 
     for w in range(W):
         for p in range(P):
-            if p == 0:  # team n on the rim (row 0)
-                A[w][p], B[w][p] = n, w + 1
+            if p == 0:  # team n is fixed
+                a, b = n, w + 1
             else:
-                A[w][p] = (w + p) % (n - 1) + 1
-                B[w][p] = ((n - 1) - p + w) % (n - 1) + 1
+                a = (w + p) % (n - 1) + 1
+                b = ((n - 1) - p + w) % (n - 1) + 1
+            A[w][p], B[w][p] = (a, b) if a > b and w % 2 == 0 else (b, a)
     return A, B
 
 
@@ -124,8 +101,8 @@ def build_opt_solver(n: int):
                     for w in range(W)
                     for m in range(P)
                     if A[w][m] == t or B[w][m] == t]
-
-            sequential_at_most_2(opt, lits, f"c_p{p}_t{t}")
+            opt.add(AtMost(*lits, 2))
+            # sequential_at_most_2(opt, lits, f"c_p{p}_t{t}")
 
 
     # 3. symmetry breaking – week 0 fixed, Swap[0][*] = False

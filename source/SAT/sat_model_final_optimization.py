@@ -50,13 +50,14 @@ def circle_tables(n: int):
 
     for w in range(W):
         for p in range(P):
-            if p == 0:  # team n on the rim
-                A[w][p], B[w][p] = n, w + 1
+            if p == 0:  # team n is fixed
+                a, b = n, w + 1
             else:
-                A[w][p] = (w + p) % (n - 1) + 1
-                B[w][p] = ((n - 1) - p + w) % (n - 1) + 1
+                a = (w + p) % (n - 1) + 1
+                b = ((n - 1) - p + w) % (n - 1) + 1
+            A[w][p], B[w][p] = (a, b) if a > b and w % 2 == 0 else (b, a)
 
-    # heuristic swap (as in MiniZinc)
+    # heuristic swap
     for w in range(1, W):
         tgt = n - w
         row = next(r for r in range(1, P)

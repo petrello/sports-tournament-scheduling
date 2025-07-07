@@ -11,13 +11,12 @@
 # --------------------------------------------------------------------------- #
 
 import sys, time, json, pathlib, threading
-from z3 import Solver, Bool, AtMost, Not, sat, And, AtLeast
+from z3 import Solver, Bool, AtMost, Not, sat, And, AtLeast, Or
 
 
 # --------------------------------------------------------------------------- #
 # tiny helper: sequential (Or ∧ AtMost 1)  “exactly‑one”
 # --------------------------------------------------------------------------- #
-
 def exactly_one(bool_vars):
     """Z3 encoding of "Exactly k" over bool_vars."""
     return And(AtLeast(*bool_vars, 1), AtMost(*bool_vars, 1))
@@ -37,12 +36,12 @@ def circle_tables(n: int):
 
     for w in range(W):
         for p in range(P):
-            if p == 0:  # team n on the rim
-                A[w][p], B[w][p] = n, w + 1
+            if p == 0:  # team n is fixed
+                a, b = n, w + 1
             else:
-                A[w][p] = (w + p) % (n - 1) + 1
-                B[w][p] = ((n - 1) - p + w) % (n - 1) + 1
-
+                a = (w + p) % (n - 1) + 1
+                b = ((n - 1) - p + w) % (n - 1) + 1
+            A[w][p], B[w][p] = (a, b) if a > b else (b, a)
     return A, B
 
 # --------------------------------------------------------------------------- #
@@ -53,13 +52,6 @@ def build_dec_solver(n: int):
     assert n % 2 == 0 and n >= 2, "n must be even ≥ 2"
     A, B = circle_tables(n)
     W, P = len(A), len(A[0])
-
-    # fast check: if every team already appears ≤2 times per row, we can freeze
-    # the identity permutation for week‑0, saving many variables/clauses.
-    already_ok = all(
-        max(sum(1 for w in range(W) if A[w][p] == t or B[w][p] == t)
-            for t in range(1, n + 1)) <= 2 for p in range(P)
-    )
 
     s = Solver()
 
@@ -75,16 +67,16 @@ def build_dec_solver(n: int):
         for m in range(P):
             s.add(exactly_one([X[w][p][m] for p in range(P)]))
 
-    # 2. team capacity: any team appears in the same row at most twice overall
+    # 2. capacity ≤2 per team per row (across weeks)
     for p in range(P):
         for t in range(1, n + 1):
-            lits = [X[w][p][m] for w in range(W) for m in range(P)
+            lits = [X[w][p][m]
+                    for w in range(W)
+                    for m in range(P)
                     if A[w][m] == t or B[w][m] == t]
-            if len(lits) > 2:  # otherwise automatically satisfied
-                s.add(AtMost(*lits, 2))
+            s.add(AtMost(*lits, 2))
 
-    # 3. symmetry breaking: fix week‑0 permutation to identity, if feasible
-    if already_ok:
+        # 3. symmetry breaking – week 0 fixed
         for p in range(P):
             for m in range(P):
                 s.add(X[0][p][m] if m == p else Not(X[0][p][m]))
