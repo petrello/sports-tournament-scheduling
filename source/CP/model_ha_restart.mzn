@@ -84,7 +84,7 @@ constraint
 % Search Strategy
 %-----------------------------------------------------------------------------%
 solve 
-  :: int_search([Home[p,w] | p in Periods, w in Weeks], dom_w_deg, indomain_random)
+  :: int_search([Home[p,w] | p in Periods, w in Weeks], first_fail, indomain_random)
   :: restart_luby(100)
 satisfy;
 
