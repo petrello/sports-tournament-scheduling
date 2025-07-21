@@ -1,6 +1,8 @@
 include "globals.mzn";
 
-int: n;                    % even
+int: n;                                    % even number of teams (set in .dzn)
+constraint n mod 2 = 0 /\ n >= 2;          % basic sanity check
+
 int: total_matches = n*(n-1) div 2;
 int: weeks   = n - 1;
 int: periods = n div 2;
@@ -74,8 +76,9 @@ constraint
 
 % 6) lexicographic order on the first row of Home to break further symmetry:
 constraint
-  increasing(
-    [ Home[1,w] | w in Weeks ]
+  lex_lesseq(
+    [ Home[1, w]   | w in 1..weeks-1 ],
+    [ Home[1, w+1] | w in 1..weeks-1 ]
   );
 
 % Search Strategy

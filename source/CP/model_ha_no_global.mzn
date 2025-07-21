@@ -1,6 +1,6 @@
-include "globals.mzn";
+int: n;                                    % even number of teams (set in .dzn)
+constraint n mod 2 = 0 /\ n >= 2;          % basic sanity check
 
-int: n;                    % even
 int: total_matches = n*(n-1) div 2;
 int: weeks   = n - 1;
 int: periods = n div 2;
@@ -20,13 +20,20 @@ constraint
 
 % 2) every possible unordered pair occurs exactly once:
 %    linearize (i,j) to an integer (i-1)*n + j, then all-different
-constraint
-  alldifferent([
-    Home[p,w] * n + Away[p,w]
-  | p in Periods, w in Weeks]);
-
-% 3) each team plays exactly once per week
 /*constraint
+  alldifferent([
+    if Home[p,w] < Away[p,w] then Home[p,w]* n + Away[p,w]
+    else Home[p,w] + Away[p,w] * n endif
+  | p in Periods, w in Weeks]);*/
+constraint
+  forall(i, j in Teams where i < j)(
+    sum(p in Periods, w in Weeks)(
+      bool2int(Home[p,w] = i /\ Away[p,w] = j)
+    + bool2int(Home[p,w] = j /\ Away[p,w] = i)
+    ) = 1
+  );
+% 3) each team plays exactly once per week
+constraint
   forall(t in Teams, w in Weeks)(
     sum(p in Periods)(
       bool2int(Home[p,w] = t \/ Away[p,w] = t)
@@ -39,8 +46,8 @@ constraint
     sum(w in Weeks)(
       bool2int(Home[p,w] = t \/ Away[p,w] = t)
     ) <= 2
-  );*/
-constraint
+  );
+/*constraint
   forall(w in Weeks)(
     all_different(
       [ Home[p,w] | p in Periods ]
@@ -63,7 +70,7 @@ constraint
       % upper = 2
       [ 2 | t in Teams ]
     )
-  );
+  );*/
 
 % 5) symmetry‐break week 1 to (1,2),(3,4),…,(n−1,n)
 constraint
@@ -73,8 +80,9 @@ constraint
 
 % 6) lexicographic order on the first row of Home to break further symmetry:
 constraint
-  increasing(
-    [ Home[1,w] | w in Weeks ]
+  lex_lesseq(
+    [ Home[1, w]   | w in 1..weeks-1 ],
+    [ Home[1, w+1] | w in 1..weeks-1 ]
   );
 
 
