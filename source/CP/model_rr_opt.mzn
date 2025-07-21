@@ -84,10 +84,10 @@ solve
 :: seq_search([
       % first place the matches…
       int_search([ pos[w,p]  | w in Weeks, p in Periods ],
-                 first_fail, indomain_random, complete),
+                 first_fail, indomain_min, complete),
       % …then decide the flips
       int_search([ swap[w,p] | w in Weeks, p in Periods ],
-                 first_fail, indomain_random, complete)
+                 first_fail, indomain_min, complete)
    ])
  minimize maxImbalance;
 
