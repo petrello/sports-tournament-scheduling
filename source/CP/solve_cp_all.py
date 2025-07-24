@@ -16,78 +16,78 @@ res_dir = pathlib.Path(__file__).parent.parent.parent / 'res' / 'CP'
 experiments_config = {
     # Experiments with Home-Away method
     'ha-gecode': {
-        'model_path': 'model_ha.mzn',
+        'model_path': 'cp_model_ha.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
     'ha-nosymm-gecode': {
-        'model_path': 'model_ha_no_symm.mzn',
+        'model_path': 'cp_model_ha_no_symm.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
     'ha-noglob-gecode': {
-        'model_path': 'model_ha_no_global.mzn',
+        'model_path': 'cp_model_ha_no_global.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
     'ha-chuffed': {
-        'model_path': 'model_ha.mzn',
+        'model_path': 'cp_model_ha.mzn',
         'cp_solver': 'chuffed',
         'optimization': 'false',
     },
     'ha-nosymm-chuffed': {
-        'model_path': 'model_ha_no_symm.mzn',
+        'model_path': 'cp_model_ha_no_symm.mzn',
         'cp_solver': 'chuffed',
         'optimization': 'false',
     },
     'ha-noglob-chuffed': {
-        'model_path': 'model_ha_no_global.mzn',
+        'model_path': 'cp_model_ha_no_global.mzn',
         'cp_solver': 'chuffed',
         'optimization': 'false',
     },
 
     # Experiments with Home-Away method and restart
     'ha-restart-gecode': {
-        'model_path': 'model_ha_restart.mzn',
+        'model_path': 'cp_model_ha_restart.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
     'ha-nosymm-restart-gecode': {
-        'model_path': 'model_ha_no_symm_restart.mzn',
+        'model_path': 'cp_model_ha_no_symm_restart.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
     'ha-noglob-restart-gecode': {
-        'model_path': 'model_ha_no_global_restart.mzn',
+        'model_path': 'cp_model_ha_no_global_restart.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
 
     # Experiments with Round-Robin method
     'rr-gecode': {
-        'model_path': 'model_rr.mzn',
+        'model_path': 'cp_model_rr.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
     'rr-chuffed': {
-        'model_path': 'model_rr.mzn',
+        'model_path': 'cp_model_rr.mzn',
         'cp_solver': 'chuffed',
         'optimization': 'false',
     },
     'rr-opt-gecode': {
-        'model_path': 'model_rr_opt.mzn',
+        'model_path': 'cp_model_rr_opt.mzn',
         'cp_solver': 'gecode',
         'optimization': 'true',
     },
 
     # Experiments with Round-Robin method and restart
     'rr-gecode-restart': {
-        'model_path': 'model_rr_restart.mzn',
+        'model_path': 'cp_model_rr_restart.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
     'rr-opt-gecode-restart': {
-        'model_path': 'model_rr_restart_opt.mzn',
+        'model_path': 'cp_model_rr_restart_opt.mzn',
         'cp_solver': 'gecode',
         'optimization': 'true',
     },
