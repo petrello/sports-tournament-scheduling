@@ -128,13 +128,13 @@ def main():
                 raise e
 
         # Repeat the experiment for each CP model
-        for exp_idx, exp_key in enumerate(experiments_config.keys()):
-            print(f"\n  EXPERIMENT: {exp_key:<35} [{exp_idx + 1}/{len(experiments_config)}]")
+        for exp_idx, exp_name in enumerate(experiments_config.keys()):
+            print(f"\n  EXPERIMENT: {exp_name:<35} [{exp_idx + 1}/{len(experiments_config)}]")
             print(f"  {'─' * 60}")
 
-            if prev_instance_data and exp_key not in prev_instance_data:
-                raise KeyError(f"Experiment key '{exp_key}' missing in previous results for {prev_instance_id}")
-            if prev_instance_data and len(prev_instance_data[exp_key]['sol']) == 0:
+            if prev_instance_data and exp_name not in prev_instance_data:
+                raise KeyError(f"Experiment key '{exp_name}' missing in previous results for {prev_instance_id}")
+            if prev_instance_data and len(prev_instance_data[exp_name]['sol']) == 0:
                 print("  SKIP EXPERIMENT: Previous model found no solution.")
 
                 # Save empty result for this experiment
@@ -147,31 +147,31 @@ def main():
                         data = json.load(f)
 
                 # Update data with empty result
-                data[exp_key] = {
+                data[exp_name] = {
                     "time": 300,
                     "optimal": False,
                     "obj": "None",
                     "sol": []
                 }
 
-                # Write the beautified JSON to the destination file
+                # Write the JSON to the destination file
                 with open(res_path, 'w') as f:
                     json.dump(data, f, indent=4)
             else:
                 # Build command to call the CP solver script
                 cmd = [
-                    sys.executable, "solve_cp_instance.py",
+                    sys.executable,
+                    "solve_cp_instance.py",
                     dzn_file,
-                    experiments_config[exp_key]['model_path'],
-                    experiments_config[exp_key]['cp_solver'],
-                    experiments_config[exp_key]['optimization'],
-                    exp_key,
+                    str(experiments_config[exp_name]['model_path']),
+                    str(experiments_config[exp_name]['cp_solver']),
+                    str(experiments_config[exp_name]['optimization']),
+                    exp_name,
                 ]
 
                 # Execute the command
                 try:
                     result = subprocess.run(cmd, text=True)
-
                     if result.returncode == 0:
                         print(f"  STATUS: {'SUCCESS':<10}")
                     else:
