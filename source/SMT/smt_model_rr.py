@@ -16,7 +16,7 @@ def select_const(values: List[int], idx: Int) -> Int:
         expr = If(idx == k + 1, IntVal(values[k]), expr)
     return expr
 
-class SMTModelHA:
+class SMTModelRR:
     @staticmethod
     def build_solver(
             n: int, optimization: bool
