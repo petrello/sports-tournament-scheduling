@@ -152,8 +152,8 @@ def main():
         with open(res_path) as f:
             data = json.load(f)
 
-    # Update data with new result
-    data[args.test_name] = result[args.test_name]
+    # Update data with the new result
+    data.update(result)
 
     # Beautify JSON output to keep array indentation
     opts = jsbeautifier.default_options()

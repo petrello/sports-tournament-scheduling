@@ -37,11 +37,14 @@ class SMTModelRR:
         A: list[list[int]] = [[0] * P for _ in range(W)]
         B: list[list[int]] = [[0] * P for _ in range(W)]
 
-        for w in range(1, W + 1):          # keep 1‑based math for clarity
+        for w in range(1, W + 1):
             for p in range(1, P + 1):
                 a_raw = n if p == 1 else ((w - 1) + (p - 1)) % (n - 1) + 1
                 b_raw = w if p == 1 else ((n - 1) - (p - 1) + (w - 1)) % (n - 1) + 1
-                if not optimization:
+                if optimization:
+                    A[w - 1][p - 1] = a_raw
+                    B[w - 1][p - 1] = b_raw
+                else:
                     A[w - 1][p - 1] = max(a_raw, b_raw)
                     B[w - 1][p - 1] = min(a_raw, b_raw)
 

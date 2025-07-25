@@ -13,7 +13,7 @@ import sys
 instances_path = pathlib.Path(__file__).parent.parent.parent / 'instances' / 'CP'
 res_dir = pathlib.Path(__file__).parent.parent.parent / 'res' / 'CP'
 
-experiments_config = {
+EXPERIMENTS_CONFIG = {
     # Experiments with Home-Away method
     'ha-gecode': {
         'model_path': 'cp_model_ha.mzn',
@@ -93,6 +93,7 @@ experiments_config = {
     },
 }
 
+
 def main():
     # Find all .dzn files in the instances directory
     dzn_files = glob.glob(os.path.join(instances_path, "*.dzn"))
@@ -127,9 +128,9 @@ def main():
                 print(f"  WARNING: Could not read previous results for {prev_instance_id}: {e}")
                 raise e
 
-        # Repeat the experiment for each CP model
-        for exp_idx, exp_name in enumerate(experiments_config.keys()):
-            print(f"\n  EXPERIMENT: {exp_name:<35} [{exp_idx + 1}/{len(experiments_config)}]")
+        # Iterate over each defined experiment
+        for exp_idx, exp_name in enumerate(EXPERIMENTS_CONFIG.keys()):
+            print(f"\n  EXPERIMENT: {exp_name:<35} [{exp_idx + 1}/{len(EXPERIMENTS_CONFIG)}]")
             print(f"  {'─' * 60}")
 
             if prev_instance_data and exp_name not in prev_instance_data:
@@ -163,9 +164,9 @@ def main():
                     sys.executable,
                     "solve_cp_instance.py",
                     dzn_file,
-                    str(experiments_config[exp_name]['model_path']),
-                    str(experiments_config[exp_name]['cp_solver']),
-                    str(experiments_config[exp_name]['optimization']),
+                    str(EXPERIMENTS_CONFIG[exp_name]['model_path']),
+                    str(EXPERIMENTS_CONFIG[exp_name]['cp_solver']),
+                    str(EXPERIMENTS_CONFIG[exp_name]['optimization']),
                     exp_name,
                 ]
 
