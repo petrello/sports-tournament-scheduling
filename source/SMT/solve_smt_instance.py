@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SMT-InstanceSolver: Run SMTModelRR (Z3 Python model) through Z3 or CVC5 CLI
+SMT-InstanceSolver: Run SMT models (HA/RR) through Z3 or CVC5 CLI
 """
 
 import os
@@ -12,154 +12,196 @@ import jsbeautifier
 import time
 import math
 import re
+import z3
 
-# Import SMT models
+# Import SMT models from other files
 from smt_model_ha import SMTModelHA
 from smt_model_rr import SMTModelRR
 
 
-def parse_smt_output(output_text: str):
-    """Parse solver output text and extract solution/optimality"""
-    output_lower = output_text.lower()
-    if "unsat" in output_lower:
+def parse_decision_output(output_text: str, model: str, n: int, A=None, B=None):
+    """
+    Parse the text output from a CLI solver (z3/cvc5) for decision problems.
+    It reconstructs the schedule from the variable assignments.
+    """
+    # Check if the problem was satisfiable
+    out_lower = output_text.lower()
+    if "unsat" in out_lower or "sat" not in out_lower:
         return None, False
-    if "sat" not in output_lower:
-        return None, False
 
-    # basic model parsing (Z3/CVC5 both print (define-fun ...)):
-    model = {}
-    for match in re.finditer(r"\(define-fun\s+(\S+)\s+\(\)\s+\S+\s+([^)]+)\)", output_text):
-        var, val = match.groups()
-        model[var] = val.strip()
+    # Parse all model variable assignments from the solver's output
+    values = {}
+    # This regex captures variable names and their integer values
+    for match in re.finditer(r"\(define-fun\s+([^\s]+)\s+\(\)\s+[^\s]+\s+([^\)]+)\)", output_text):
+        var, val_str = match.groups()
+        values[var] = int(val_str.strip())
 
-    return model, True
+    W, P = n - 1, n // 2
+    schedule = []
+
+    # Reconstruct the schedule based on the model used
+    if model == 'ha':
+        for p in range(P):
+            row = []
+            for w in range(W):
+                h_var, a_var = f"H_{p + 1}_{w + 1}", f"A_{p + 1}_{w + 1}"
+                row.append([values[h_var], values[a_var]])
+            schedule.append(row)
+
+    elif model == 'rr':
+        for p in range(P):
+            row = []
+            for w in range(W):
+                pos_var = f"pos_{w + 1}_{p + 1}"
+                k = values[pos_var] - 1
+                row.append([A[w][k], B[w][k]])
+            schedule.append(row)
+
+    return schedule
 
 
-def solve_smt_instance(model, solver_name, n_value, add_constraints, optimization, test_name, timeout=300):
-    """Solve one SMT instance by generating SMT-LIB and running Z3 or CVC5"""
-    # Build solver from your class
-    solver, pos, swap, A, B, max_imbalance = (
-        SMTModelHA.build_solver(n_value, add_constraints)
-        if model.lower() == "ha"
-        else SMTModelRR.build_solver(n_value, optimization)
-    )
+def parse_optimization_output(z3_model, n, pos_vars, swap_vars, A, B, obj_var):
+    """
+    Parse a Z3 model object from the Python API for RR optimization problems.
+    It extracts the schedule and the objective value.
+    """
+    # Extract the objective value from the model
+    obj_value = z3_model.eval(obj_var).as_long()
 
-    start = time.time()
-    # Convert solver to SMT-LIB
-    smtlib_str = solver.to_smt()
+    W, P = n - 1, n // 2
+    schedule = []
 
-    # Decide solver CLI
-    cmd = (
-        ["z3", "-in"] if solver_name.lower() == "z3" else ["cvc5", "--lang", "smt2", "--incremental"]
-    )
+    # Reconstruct the schedule by evaluating variables in the Z3 model
+    for p in range(P):
+        row = []
+        for w in range(W):
+            # Get the value for the position variable 'pos'
+            k = z3_model.eval(pos_vars[w][p]).as_long() - 1
+            # Check if the 'swap' variable is true
+            is_swapped = z3.is_true(z3_model.eval(swap_vars[w][p]))
+
+            home, away = (B[w][k], A[w][k]) if is_swapped else (A[w][k], B[w][k])
+            row.append([home, away])
+        schedule.append(row)
+
+    return schedule, obj_value
+
+def solve_smt_instance(model, solver_name, n_value, use_symmetry_breaking, optimization, test_name, timeout=300):
+    """
+    Main solver function. It orchestrates the solving process by choosing
+    between the Python API (for optimization) and a CLI solver (for decision).
+    """
+    # --- 1. Build the appropriate solver from the model file ---
+    if model.lower() == "rr":
+        solver, pos_vars, swap_vars, A, B, obj_var = SMTModelRR.build_solver(n_value, optimization)
+    elif model.lower() == "ha":
+        print(f"Using HA model with symmetry breaking: {use_symmetry_breaking}")
+        solver = SMTModelHA.build_solver(n_value, use_symmetry_breaking)
+        # Initialize RR-specific variables to None for consistency
+        pos_vars, swap_vars, A, B, obj_var = None, None, None, None, None
+    else:
+        raise ValueError(f"Unknown model: {model}")
+
+    # --- 2. Solve the instance using the correct method ---
+    start_time = time.time()
+    solution, obj, optimal = None, None, False
 
     try:
-        proc = subprocess.run(
-            cmd,
-            input=smtlib_str,
-            text=True,
-            capture_output=True,
-            timeout=timeout
-        )
-        elapsed = time.time() - start
+        if optimization:
+            # --- API-based execution for RR Optimization ---
+            solver.set("timeout", timeout * 1000)  # Z3 timeout is in milliseconds
+            status = solver.check()
+            elapsed_time = time.time() - start_time
 
-        if proc.returncode == 0:
-            sol, ok = parse_smt_output(proc.stdout)
-            return {
-                test_name.lower(): {
-                    "time": math.floor(elapsed) if sol is not None else timeout,
-                    "optimal": ok,
-                    "obj": str(max_imbalance) if (optimization and ok) else "None",
-                    "sol": sol if sol is not None else []
-                }
-            }
+            if status == z3.sat:
+                z3_model = solver.model()
+                solution, obj = parse_optimization_output(z3_model, n_value, pos_vars, swap_vars, A, B, obj_var)
+                optimal = (solution is not None and elapsed_time < timeout and obj < 2)
+
+
         else:
-            raise Exception(
-                f"Solver error {proc.returncode}\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}"
-            )
+            # --- CLI-based execution for Decision Problems (HA and RR) ---
+            smtlib_str = solver.to_smt2() + "\n(check-sat)\n(get-model)\n"
+            command = ["z3", "-in"] if solver_name.lower() == "z3" else ["cvc5", "--lang=smt2", "--produce-models"]
+
+            result = subprocess.run(command, input=smtlib_str, text=True, capture_output=True, timeout=timeout)
+            elapsed_time = time.time() - start_time
+
+            if result.returncode == 0:
+                solution = parse_decision_output(result.stdout, model.lower(), n_value, A, B)
+                optimal = (solution is not None and elapsed_time < timeout)
+
+            else:
+                raise Exception(
+                    "Error occurred while running the MiniZinc solver.",
+                    f"CODE: {result.returncode}",
+                    f"DETAILS: {result.stdout}"
+                )
 
     except subprocess.TimeoutExpired:
-        return {
-            test_name.lower(): {
-                "time": timeout,
-                "optimal": False,
-                "obj": "None",
-                "sol": []
-            }
+        elapsed_time = timeout
+    except Exception as e:
+        raise f"An unexpected error occurred for {test_name}: {e}"
+
+    return {
+        test_name.lower(): {
+            "time": math.floor(elapsed_time) if solution is not None else timeout,
+            "optimal": optimal,
+            "obj": obj if obj is not None else "None",
+            "sol": solution if solution is not None else [],
         }
+    }
 
 
 def main():
     parser = argparse.ArgumentParser(description="SMT-InstanceSolver: run SMT models with Z3 or CVC5")
 
-    parser.add_argument(
-        "model",
-        help="Solve the problem with HA or RR method",
-        choices=["ha", "rr"]
-    )
-    parser.add_argument(
-        "solver_name",
-        help="SMT solver to use",
-        choices=["z3", "cvc5"]
-    )
-    parser.add_argument(
-        "n_value",
-        help="Input n for the model",
-        type=int
-    )
-    parser.add_argument(
-        "use_symmetry_breaking_constraints",
-        help="True/False to add symmetry breaking constraints",
-        type=lambda x: x.lower() == 'true'
-    )
-    parser.add_argument(
-        "optimization",
-        help="True/False for optimization mode",
-        type=lambda x: x.lower() == 'true'
-    )
-    parser.add_argument(
-        "test_name",
-        help="Name for the test (used as JSON key)",
-        type=str
-    )
-    parser.add_argument(
-        "-t",
-        "--timeout",
-        help="Timeout in seconds (default: 300)",
-        type=int,
-        default=300
-    )
+    parser.add_argument("model", help="Solve the problem with HA or RR method", choices=["ha", "rr"])
+    parser.add_argument("solver_name", help="SMT solver to use", choices=["z3", "cvc5"])
+    parser.add_argument("n_value", help="Input n for the model", type=int)
+    parser.add_argument("use_symmetry_breaking", help="True/False to add symmetry breaking constraints (for HA model)",
+                        type=lambda x: x.lower() == 'true')
+    parser.add_argument("optimization", help="True/False for optimization mode (for RR model)",
+                        type=lambda x: x.lower() == 'true')
+    parser.add_argument("test_name", help="Name for the test (used as JSON key)", type=str)
+    parser.add_argument("-t", "--timeout", help="Timeout in seconds (default: 300)", type=int, default=300)
 
     args = parser.parse_args()
 
+    # Solve the instance with the given parameters
     result = solve_smt_instance(
         args.model,
         args.solver_name,
         args.n_value,
-        args.use_symmetry_breaking_constraints,
+        args.use_symmetry_breaking,
         args.optimization,
         args.test_name,
         args.timeout
     )
 
-    # Save result
+    # Prepare directory and file path for saving the results
     res_dir = pathlib.Path(__file__).parent.parent.parent / "res" / "SMT"
     os.makedirs(res_dir, exist_ok=True)
-
     res_path = res_dir / f"n{args.n_value}.json"
+
     data = {}
     if res_path.exists():
-        with open(res_path) as f:
+        with open(res_path, 'r') as f:
             data = json.load(f)
 
-    data[args.test_name] = result[args.test_name.lower()]
+    # Update data with the new result
+    data.update(result)
 
+    # Beautify and save the JSON output
     opts = jsbeautifier.default_options()
     opts.keep_array_indentation = True
-    with open(res_path, "w") as f:
-        f.write(jsbeautifier.beautify(json.dumps(data), opts))
+    beautified_json = jsbeautifier.beautify(json.dumps(data), opts)
+
+    with open(res_path, 'w') as f:
+        f.write(beautified_json)
 
     print(f"  Result saved to: {res_path}")
+    return 0
 
 
 if __name__ == "__main__":
