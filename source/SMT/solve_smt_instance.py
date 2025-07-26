@@ -24,15 +24,16 @@ def parse_decision_output(output_text: str, model: str, n: int, A=None, B=None):
     Parse the text output from a CLI solver (z3/cvc5) for decision problems.
     It reconstructs the schedule from the variable assignments.
     """
-    # Check if the problem was satisfiable
+    # Check if the problem was satisfiable (for CVC5, while Z3 would throw an error)
     out_lower = output_text.lower()
     if "unsat" in out_lower or "sat" not in out_lower:
-        return None, False
+        print("  The instance is UNSATISFIABLE")
+        return None
 
     # Parse all model variable assignments from the solver's output
     values = {}
     # This regex captures variable names and their integer values
-    for match in re.finditer(r"\(define-fun\s+([^\s]+)\s+\(\)\s+[^\s]+\s+([^\)]+)\)", output_text):
+    for match in re.finditer(r"\(define-fun\s+(\S+)\s+\(\)\s+\S+\s+([^)]+)\)", output_text):
         var, val_str = match.groups()
         values[var] = int(val_str.strip())
 
@@ -60,7 +61,7 @@ def parse_decision_output(output_text: str, model: str, n: int, A=None, B=None):
     return schedule
 
 
-def parse_optimization_output(z3_model, n, pos_vars, swap_vars, A, B, obj_var):
+def parse_optimization_output(z3_model, pos_vars, swap_vars, A, B, obj_var):
     """
     Parse a Z3 model object from the Python API for RR optimization problems.
     It extracts the schedule and the objective value.
@@ -68,7 +69,7 @@ def parse_optimization_output(z3_model, n, pos_vars, swap_vars, A, B, obj_var):
     # Extract the objective value from the model
     obj_value = z3_model.eval(obj_var).as_long()
 
-    W, P = n - 1, n // 2
+    W, P = len(pos_vars), len(pos_vars[0])
     schedule = []
 
     # Reconstruct the schedule by evaluating variables in the Z3 model
@@ -95,7 +96,6 @@ def solve_smt_instance(model, solver_name, n_value, use_symmetry_breaking, optim
     if model.lower() == "rr":
         solver, pos_vars, swap_vars, A, B, obj_var = SMTModelRR.build_solver(n_value, optimization)
     elif model.lower() == "ha":
-        print(f"Using HA model with symmetry breaking: {use_symmetry_breaking}")
         solver = SMTModelHA.build_solver(n_value, use_symmetry_breaking)
         # Initialize RR-specific variables to None for consistency
         pos_vars, swap_vars, A, B, obj_var = None, None, None, None, None
@@ -115,16 +115,20 @@ def solve_smt_instance(model, solver_name, n_value, use_symmetry_breaking, optim
 
             if status == z3.sat:
                 z3_model = solver.model()
-                solution, obj = parse_optimization_output(z3_model, n_value, pos_vars, swap_vars, A, B, obj_var)
+                solution, obj = parse_optimization_output(z3_model, pos_vars, swap_vars, A, B, obj_var)
                 optimal = (solution is not None and elapsed_time < timeout and obj < 2)
 
 
         else:
             # --- CLI-based execution for Decision Problems (HA and RR) ---
             smtlib_str = solver.to_smt2() + "\n(check-sat)\n(get-model)\n"
-            command = ["z3", "-in"] if solver_name.lower() == "z3" else ["cvc5", "--lang=smt2", "--produce-models"]
+            cmd = (
+                ["z3", "-in"]
+                if solver_name.lower() == "z3"
+                else ["cvc5", "--lang=smt2", "--produce-models", "--incremental"]
+            )
 
-            result = subprocess.run(command, input=smtlib_str, text=True, capture_output=True, timeout=timeout)
+            result = subprocess.run(cmd, input=smtlib_str, text=True, capture_output=True, timeout=timeout)
             elapsed_time = time.time() - start_time
 
             if result.returncode == 0:
@@ -132,16 +136,19 @@ def solve_smt_instance(model, solver_name, n_value, use_symmetry_breaking, optim
                 optimal = (solution is not None and elapsed_time < timeout)
 
             else:
-                raise Exception(
-                    "Error occurred while running the MiniZinc solver.",
-                    f"CODE: {result.returncode}",
-                    f"DETAILS: {result.stdout}"
-                )
+                if "unsat" in result.stdout.lower():
+                    print("  The instance is UNSATISFIABLE")
+                else:
+                    raise Exception(
+                        f"Error occurred while running the {'Z3' if solver_name.lower() == "z3" else 'CVC5'} SMT solver.",
+                        f"CODE: {result.returncode}",
+                        f"DETAILS: {result.stdout}"
+                    )
 
     except subprocess.TimeoutExpired:
         elapsed_time = timeout
     except Exception as e:
-        raise f"An unexpected error occurred for {test_name}: {e}"
+        raise Exception(f"An unexpected error occurred for {test_name}: {e}")
 
     return {
         test_name.lower(): {
@@ -158,7 +165,11 @@ def main():
 
     parser.add_argument("model", help="Solve the problem with HA or RR method", choices=["ha", "rr"])
     parser.add_argument("solver_name", help="SMT solver to use", choices=["z3", "cvc5"])
-    parser.add_argument("n_value", help="Input n for the model", type=int)
+    parser.add_argument(
+        "instance_path",
+        help="Path to the file instance to test",
+        type=pathlib.Path
+    )
     parser.add_argument("use_symmetry_breaking", help="True/False to add symmetry breaking constraints (for HA model)",
                         type=lambda x: x.lower() == 'true')
     parser.add_argument("optimization", help="True/False for optimization mode (for RR model)",
@@ -168,24 +179,34 @@ def main():
 
     args = parser.parse_args()
 
+    # Extract n_value from the file content
+    with open(args.instance_path, 'r') as f:
+        content = f.read()
+        match = re.search(r'n\s*=\s*(\d+);', content)
+        n_value = int(match.group(1))
+
     # Solve the instance with the given parameters
     result = solve_smt_instance(
         args.model,
         args.solver_name,
-        args.n_value,
+        n_value,
         args.use_symmetry_breaking,
         args.optimization,
         args.test_name,
         args.timeout
     )
 
-    # Prepare directory and file path for saving the results
-    res_dir = pathlib.Path(__file__).parent.parent.parent / "res" / "SMT"
+    # Save result
+    res_dir = pathlib.Path(__file__).parent.parent.parent / 'res' / 'SMT'
     os.makedirs(res_dir, exist_ok=True)
-    res_path = res_dir / f"n{args.n_value}.json"
 
+    # Extract instance_id from filename (remove .dzn extension)
+    instance_id = os.path.splitext(os.path.basename(args.instance_path))[0]
+    res_path = os.path.join(res_dir, f'{instance_id}.json')
+
+    # Load existing data if available
     data = {}
-    if res_path.exists():
+    if os.path.exists(res_path):
         with open(res_path, 'r') as f:
             data = json.load(f)
 
@@ -195,8 +216,10 @@ def main():
     # Beautify and save the JSON output
     opts = jsbeautifier.default_options()
     opts.keep_array_indentation = True
+
     beautified_json = jsbeautifier.beautify(json.dumps(data), opts)
 
+    # Write the beautified JSON to the destination file
     with open(res_path, 'w') as f:
         f.write(beautified_json)
 
