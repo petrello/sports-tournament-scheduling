@@ -8,7 +8,7 @@ class SATModelRR:
     @staticmethod
     def build_solver(
             n: int, optimization: bool
-    ) -> tuple[Solver, List[List[Int]], List[List[Bool]], List[List[Int]], List[List[Int]], List[List[Int]]]:
+    ) -> tuple[Solver, List[List[List[Bool]]], List[List[Bool]], List[List[int]], List[List[int]], List[Bool]]:
         assert n % 2 == 0 and n >= 2, "n must be even and >= 2"
 
         W = n - 1   # number of weeks
