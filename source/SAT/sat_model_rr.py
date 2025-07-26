@@ -4,7 +4,7 @@ from z3 import Solver, Optimize, Int, Distinct, Sum, And, If, IntVal, Bool, Not,
 from source.SAT.sat_encodings import exactly_one, at_most_k
 
 
-class SMTModelRR:
+class SATModelRR:
     @staticmethod
     def build_solver(
             n: int, optimization: bool
