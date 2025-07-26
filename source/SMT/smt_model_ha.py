@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List
 from z3 import Solver, Int, Distinct, Sum, And, If, Implies
 
 
@@ -14,7 +14,6 @@ class SMTModelHA:
 
         solver = Solver()
 
-        # ------------------------------------------------------------------
         # variables  (1‑based indices in comments for human readability)
         Home: List[List[Int]] = [
             [ Int(f"H_{p+1}_{w+1}") for w in range(W) ]
@@ -47,7 +46,7 @@ class SMTModelHA:
         ]
         solver.add(Distinct(*pair_codes))
 
-        # (3) each team plays exactly once per week  (all‑different inside week)
+        # (3) each team plays exactly once per week
         for w in range(W):
             week_slots = [ Home[p][w] for p in range(P) ] + \
                          [ Away[p][w] for p in range(P) ]
@@ -61,7 +60,7 @@ class SMTModelHA:
                 solver.add(Sum([ If(slot == t, 1, 0) for slot in slots ]) <= 2)
 
         if use_symmetry_breaking_constraints:
-            # (5) symmetry break: week 1 is (1,2),(3,4),…
+            # (5) symmetry break: week 1 fixed
             for p in range(P):
                 solver.add(Home[p][0] == 2*p + 1)
                 solver.add(Away[p][0] == 2*p + 2)
