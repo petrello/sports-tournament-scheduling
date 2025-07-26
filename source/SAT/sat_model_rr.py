@@ -1,5 +1,5 @@
-from typing import List, Union
-from z3 import Solver, Optimize, Int, Distinct, Sum, And, If, IntVal, Bool, Not, Abs, Or, Implies, PbEq
+from typing import List
+from z3 import Solver, Int, And, Bool, Not, Or, Implies, PbEq
 
 from source.SAT.sat_encodings import exactly_one, at_most_k
 
