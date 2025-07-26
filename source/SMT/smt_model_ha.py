@@ -67,8 +67,12 @@ class SMTModelHA:
                 solver.add(Away[p][0] == 2*p + 2)
 
             # (6) lex_lesseq on first row of Home (period 1)
-            for w in range(W - 1):
-                prefix_equal = And([ Home[0][k] == Home[0][k+1] for k in range(w) ])
-                solver.add(Implies(prefix_equal, Home[0][w] <= Home[0][w+1]))
+            # 1. Explicitly add the constraint for the w=0 case (to handle CVC5 exceptions)
+            solver.add(Home[0][0] <= Home[0][1])
+
+            # 2. Start the loop from w=1, skipping the problematic case
+            for w in range(1, W - 1):
+                prefix_equal = And([Home[0][k] == Home[0][k + 1] for k in range(w)])
+                solver.add(Implies(prefix_equal, Home[0][w] <= Home[0][w + 1]))
 
         return solver
