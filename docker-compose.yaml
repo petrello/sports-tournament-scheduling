@@ -1,0 +1,22 @@
+services:
+  sports_tournament_scheduling:
+    # Use the Dockerfile in the current directory to build the image
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # Set the container name for easy reference
+    container_name: sports-tournament-scheduling
+
+    # Keep the container running and allow for interactive shell access
+    stdin_open: true # Equivalent to -i in docker run
+    tty: true        # Equivalent to -t in docker run
+
+    # --- Volume Mounts for Seamless File Sync ---
+    # This is the key improvement. It links local folders to folders inside the container.
+    # Changes made locally are reflected inside the container, and files created
+    # inside the container (like results) appear on your local machine.
+    volumes:
+      # Mount the entire project directory into the container's working directory
+      - .:/home/appuser/cdmo
+
