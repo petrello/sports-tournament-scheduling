@@ -1,7 +1,7 @@
 from typing import List
-from z3 import Solver, Int, And, Bool, Not, Or, Implies, PbEq
+from z3 import Solver, And, Bool, Not, Or, Implies, PbEq
 
-from source.SAT.sat_encodings import exactly_one, at_most_k
+from sat_encodings import exactly_one, at_most_k
 
 
 class SATModelRR:

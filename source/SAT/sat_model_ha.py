@@ -2,7 +2,7 @@ from typing import List
 
 from z3 import Solver, And, Implies, Bool, Not, Or, BoolVal
 
-from source.SAT.sat_encodings import exactly_one, at_most_k, equiv, less_or_equal_onehot
+from sat_encodings import exactly_one, at_most_k, equiv, less_or_equal_onehot
 
 
 class SATModelHA:
