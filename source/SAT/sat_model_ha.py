@@ -33,9 +33,10 @@ class SATModelHA:
                 for i in range(n):
                     # not equal
                     solver.add(Implies(Home[p][w][i], Not(Away[p][w][i])))
-                    # j <= i forbidden
-                    for j in range(i + 1):
-                        solver.add(Or(Not(Home[p][w][i]), Not(Away[p][w][j])))
+                    if use_symmetry_breaking_constraints:
+                        # j <= i forbidden
+                        for j in range(i + 1):
+                            solver.add(Or(Not(Home[p][w][i]), Not(Away[p][w][j])))
 
         # (2) every unordered pair occurs exactly once
         for i in range(n):
@@ -58,7 +59,7 @@ class SATModelHA:
             for t in range(n):
                 slots_t = [Home[p][w][t] for w in range(W)] + \
                           [Away[p][w][t] for w in range(W)]
-                solver.add(at_most_k(slots_t, 2, name=f"team_{t}_period_{p}"))
+                solver.add(at_most_k(slots_t, 2, name=f"t{t}_p{p}"))
 
         if use_symmetry_breaking_constraints:
             # (5) symmetry break: week 1 fixed
