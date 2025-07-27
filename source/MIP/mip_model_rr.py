@@ -1,7 +1,4 @@
-from pickletools import optimize
-
 import pulp as pl
-from itertools import combinations
 
 def circle_pairs(n):
     """Return A[w][k], B[w][k] (0-based lists) per the circle method."""
@@ -16,9 +13,11 @@ def circle_pairs(n):
             B[w - 1][p - 1] = min(a_raw, b_raw)
     return A, B
 
-class MIPModelHA:
+class MIPModelRR:
     @staticmethod
-    def build_model(n: int, optimize: bool, name="BalancedSchedule_HomeAway"):
+    def build_model(n: int, optimize: bool):
+        name = "BalancedSchedule_RoundRobin_Opt" if optimize else "BalancedSchedule_RoundRobin"
+
         assert n % 2 == 0 and n >= 2, "n must be even and ≥ 2"
         W, P = n - 1, n // 2
 
