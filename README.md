@@ -71,29 +71,50 @@ a solution can be obtained within the time limit, i.e. $5$ minutes.
 └── README.md
 ```
 
-## Run Docker container
-If you want to use and test the models available in this repository, you can
-build and run the Docker container by following the steps below.
+## Getting Started with Docker
 
-You have cloned this repository on your local machine. For example:
- ```bash
- $ git clone https://github.com/petrello/sports-tournament-scheduling.git
- ```
+The entire development environment, including all solvers and Python dependencies, is configured in a Docker container for easy and reproducible setup.
 
-1. Build the Docker container image by running:
+### Prerequisites
+
+* [Docker](https://www.docker.com/get-started) installed on your local machine.
+* You have cloned this repository. For example:
     ```bash
-    $ docker build -t sports-tournament-scheduling .
+    git clone [https://github.com/petrello/sports-tournament-scheduling.git](https://github.com/petrello/sports-tournament-scheduling.git)
+    cd sports-tournament-scheduling
     ```
 
-2. Start the Docker container image in interactive mode by running:
-    ```bash
-    $ docker run -it sports-tournament-scheduling
-    ```
+### Build and Run the Container
 
-### Run inside the container
-To download a certain folder locally in your how machine run
+This project uses Docker Compose to simplify container management.
+
+1.  **Build and Start the Container:**
+    Run the following command from the root of the project. It will build the Docker image (if it doesn't exist) and start the container in interactive mode.
+    ```bash
+    docker-compose up --build -d
+    ```
+    The `-d` flag runs the container in detached mode.
+
+2.  **Access the Interactive Shell:**
+    To get an interactive `bash` shell inside the running container, execute:
+    ```bash
+    docker-compose exec scheduler bash
+    ```
+    You are now inside the container at the `/home/appuser/cdmo` directory, with all solvers and tools ready to use.
+
+### Workflow
+
+Thanks to the volume mounts configured in `docker-compose.yaml`, your local project directory is synchronized with the `/home/appuser/cdmo` directory inside the container.
+
+* **Running Experiments:** Execute your `solve_..._all.py` scripts from the interactive shell.
+* **Viewing Results:** Any files saved to the `./res` directory by the scripts inside the container will **automatically appear** in the `./res` folder on your local machine.
+* **Editing Code:** You can edit the source code on your local machine using your favorite IDE, and the changes will be immediately reflected inside the container.
+
+### Stopping the Container
+
+When you are finished, you can stop the container from your local machine's terminal by running:
 ```bash
-$ docker cp <container_name>:docker_source_path host_dest_path
+docker-compose down
 ```
 
 ## License
