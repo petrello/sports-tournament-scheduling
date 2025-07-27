@@ -199,33 +199,5 @@ def main():
     return 0
 
 
-def get_available_solvers() -> List[str]:
-    """
-    Returns a list of available MIP solvers on the system.
-
-    Returns:
-        List[str]: List of available solver names
-    """
-    available = []
-
-    # Check common solvers
-    solvers_to_check = [
-        "PULP_CBC_CMD",
-        "GUROBI_CMD",
-        "CPLEX_CMD",
-        "GLPK_CMD",
-        "SCIP_CMD"
-    ]
-
-    for solver_name in solvers_to_check:
-        try:
-            solver = pl.getSolver(solver_name)
-            if solver.available():
-                available.append(solver_name)
-        except:
-            pass
-
-    return available
 if __name__ == "__main__":
-    # main()
-    print(get_available_solvers())
+    main()
