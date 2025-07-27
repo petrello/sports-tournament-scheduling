@@ -14,7 +14,7 @@ import math
 import re
 import z3
 
-# Import SMT models from other files
+# Import SMT models
 from smt_model_ha import SMTModelHA
 from smt_model_rr import SMTModelRR
 
