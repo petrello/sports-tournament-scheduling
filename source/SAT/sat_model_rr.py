@@ -1,7 +1,7 @@
 from typing import List
 from z3 import Solver, And, Bool, Not, Or, Implies, PbEq
 
-from sat_encodings import exactly_one, at_most_k
+from sat_encodings import exactly_one, at_most_k, at_most_one
 
 
 class SATModelRR:
@@ -69,7 +69,7 @@ class SATModelRR:
                     ks = [pos[w][p][k] for k in range(P) if A[w][k] == t or B[w][k] == t]
                     # If team never appears in any k at this week/row, then no contribution
                     if ks: occ.append(Or(*ks))
-                solver.add(at_most_k(occ, 2))
+                solver.add(at_most_k(occ, 2, name=f"t{t}_p{p}"))
 
         # ---------- 3c) Symmetry break: week 1 is identity permutation ----------
         # pos[0][p] = p+1 → Pos[0][p][p] = True and all other Pos[0][p][k!=p] = False
@@ -106,7 +106,7 @@ class SATModelRR:
                     f = Bool(f"homeCnt_{t}_eq_{v}")
                     eq_flags.append(f)
                     solver.add(Implies(f, PbEq([(b, 1) for b in home_lits], v)))
-                solver.add(at_most_k(eq_flags, 1))
+                solver.add(at_most_one(eq_flags))
                 solver.add(exactly_one(eq_flags))
 
                 # Link to maxImb ladder: if homeCnt=v then maxImb ≥ |2v-W|
