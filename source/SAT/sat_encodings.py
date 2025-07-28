@@ -1,21 +1,21 @@
 from typing import List
 
-from z3 import z3, Bool, Or, Not, And
+from z3 import Bool, Or, Not, And, BoolRef, Implies
 
 
-def at_least_one(bs: List[z3.BoolRef]) -> z3.BoolRef:
+def at_least_one(bs: List[BoolRef]) -> BoolRef:
     """At least one variable is True."""
-    return z3.Or(bs)
+    return Or(bs)
 
-def at_most_one(bs: List[z3.BoolRef]) -> List[z3.BoolRef]:
+def at_most_one(bs: List[BoolRef]) -> List[BoolRef]:
     return [
-        z3.Or(z3.Not(bs[i]), z3.Not(bs[j]))
+        Or(Not(bs[i]), Not(bs[j]))
         for i in range(len(bs))
         for j in range(i+1, len(bs))
     ]
 
-def exactly_one(bs: list[z3.BoolRef]) -> z3.BoolRef:
-    return z3.And([at_least_one(bs), *at_most_one(bs)])
+def exactly_one(bs: list[BoolRef]) -> BoolRef:
+    return And([at_least_one(bs), *at_most_one(bs)])
 
 
 def at_most_k(bool_vars: List[bool], k: int, name: str) -> List:
@@ -75,13 +75,13 @@ def at_most_k(bool_vars: List[bool], k: int, name: str) -> List:
     # For adding to a Z3 solver, a list of individual clauses is standard and often more flexible.
     return constraints
 
-def equiv(a: z3.BoolRef, b: z3.BoolRef) -> z3.BoolRef:
+def equiv(a: BoolRef, b: BoolRef) -> BoolRef:
     """Bi-implication."""
-    return z3.And(z3.Implies(a,b), z3.Implies(b,a))
+    return And(Implies(a,b), Implies(b,a))
 
-def less_or_equal_onehot(a: List[z3.BoolRef], b: List[z3.BoolRef]) -> z3.BoolRef:
+def less_or_equal_onehot(a: List[BoolRef], b: List[BoolRef]) -> BoolRef:
     # a <= b in index order for one-hot vectors
     # For each i: a_i -> OR_{j>=i} b_j
-    return z3.And(*[
-        z3.Implies(a_i, z3.Or(*b[i:])) for i, a_i in enumerate(a)
+    return And(*[
+        Implies(a_i, Or(*b[i:])) for i, a_i in enumerate(a)
     ])
