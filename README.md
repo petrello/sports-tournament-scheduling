@@ -55,6 +55,11 @@ a solution can be obtained within the time limit, i.e. $5$ minutes.
 
 ```
 .
+├── instances         
+|   ├── CP              # Stores the results of CP optimization technology 
+|   ├── SAT             # Stores the results of SAT optimization technology    
+|   ├── SMT             # Stores the results of SMT optimization technology
+│   └── MIP             # Stores the results of MIP optimization technology
 ├── res         
 |   ├── CP              # Stores the results of CP optimization technology 
 |   ├── SAT             # Stores the results of SAT optimization technology    
@@ -66,9 +71,12 @@ a solution can be obtained within the time limit, i.e. $5$ minutes.
 |   ├── SMT             # Contains the source code for SMT optimization technology
 │   └── MIP             # Contains the source code for MIP optimization technology
 ├── .gitignore
-├── check_solution.py   # Checks the correctness of the computed solutions 
+├── docker-compose.yaml  # Docker Compose file to manage the container
+├── Dockerfile
 ├── LICENSE
-└── README.md
+├── README.md
+├── requirements.txt     # Python dependencies for the project
+└── check_solution.py    # Checks the correctness of the computed solutions 
 ```
 
 ## Getting Started with Docker
