@@ -18,7 +18,7 @@ def exactly_one(bs: list[BoolRef]) -> BoolRef:
     return And([at_least_one(bs), *at_most_one(bs)])
 
 
-def at_most_k(bool_vars: List[bool], k: int, name: str) -> List:
+def at_most_k(bool_vars: List[BoolRef], k: int, name: str) -> List:
     """
     Generates CNF clauses for an 'At-Most-K' constraint using the
     correct and efficient sequential counter method provided by the user.
