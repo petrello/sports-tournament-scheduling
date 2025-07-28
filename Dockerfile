@@ -13,7 +13,6 @@ ENV PYTHONUNBUFFERED=1 \
 
 # --- Install System Dependencies & Solvers ---
 # This is done in a single RUN command to optimize Docker layer caching.
-# The minizinc image is Debian-based, so we use apt-get.
 RUN apt-get update && \
     # Install utilities needed for adding repositories and downloading files
     apt-get install -y --no-install-recommends \
@@ -46,19 +45,19 @@ RUN apt-get update && \
     mv ./HiGHS-1.7.0-Linux/bin/highs /usr/local/bin/highs && \
     chmod +x /usr/local/bin/highs && \
     \
-    # --- Clean up ---
-    rm -rf /var/lib/apt/lists/* HiGHS.zip HiGHS-1.7.0-Linux && \
-    \
-    # --- Install Python Dependencies ---
-    # Create a virtual environment for clean package management
-    python3 -m venv /opt/venv && \
-    # Activate the venv for subsequent commands
-    . /opt/venv/bin/activate && \
-    # Upgrade pip
+    # Clean up build-stage artifacts
+    rm -rf /var/lib/apt/lists/* HiGHS.zip HiGHS-1.7.0-Linux
+
+# --- Install Python Dependencies ---
+# Create a virtual environment for clean package management
+RUN python3 -m venv /opt/venv
+
+# Copy the requirements file into a separate layer to leverage caching
+COPY requirements.txt .
+
+# Install the Python packages into the virtual environment
+RUN . /opt/venv/bin/activate && \
     pip install --upgrade pip && \
-    # Copy only the requirements file to leverage caching
-    COPY requirements.txt . && \
-    # Install the Python packages
     pip install -r requirements.txt
 
 
@@ -77,9 +76,7 @@ RUN groupadd --gid 1001 appgroup && \
     useradd --uid 1001 --gid 1001 --shell /bin/bash --create-home appuser
 
 # --- Copy Artifacts from Builder Stage ---
-# Copy the Python virtual environment with all packages installed
 COPY --from=builder /opt/venv /opt/venv
-# Copy the installed solvers from the builder stage
 COPY --from=builder /usr/bin/z3 /usr/bin/z3
 COPY --from=builder /usr/bin/cvc5 /usr/bin/cvc5
 COPY --from=builder /usr/bin/cbc /usr/bin/cbc
@@ -87,7 +84,6 @@ COPY --from=builder /usr/bin/glpsol /usr/bin/glpsol
 COPY --from=builder /usr/local/bin/highs /usr/local/bin/highs
 
 # Add the venv to the PATH for all users
-# The minizinc image already sets a PATH, so we prepend to it
 ENV PATH="/opt/venv/bin:$PATH"
 
 # --- Final Verification Step ---
@@ -121,5 +117,5 @@ RUN chown -R appuser:appgroup /home/appuser/cdmo
 # Switch to the non-root user
 USER appuser
 
-# Set the default command to open a bash shell, as requested
+# Set the default command to open a bash shell
 CMD ["/bin/bash"]
