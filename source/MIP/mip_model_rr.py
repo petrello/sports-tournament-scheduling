@@ -62,7 +62,6 @@ class MIPModelRR:
         for p in Periods:
             for t in Teams:
                 model += pl.lpSum(
-                    # TODO: try to replace or with +
                     x[w][p][k] * ((A[w - 1][k - 1] == t) or (B[w - 1][k - 1] == t))
                     for w in Weeks for k in Ks
                 ) <= 2, f"RowCap_t{t}_p{p}"

@@ -133,7 +133,7 @@ def main():
                     json.dump(data, f, indent=4)
 
             else:
-                # Build the command to call the SMT solver script
+                # Build the command to call the SAT solver script
                 cmd = [
                     sys.executable,
                     "solve_sat_instance.py",

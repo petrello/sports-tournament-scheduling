@@ -159,7 +159,7 @@ def main():
                     json.dump(data, f, indent=4)
 
             else:
-                # Build the command to call the SMT solver script
+                # Build the command to call the MIP solver script
                 cmd = [
                     sys.executable,
                     "solve_mip_instance.py",
