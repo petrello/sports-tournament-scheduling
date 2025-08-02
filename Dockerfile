@@ -37,15 +37,23 @@ RUN cd /tmp && \
     rm -rf /tmp/cvc5*
 
 # ------------------------------------------------------------------------------
-# Optional: Install HiGHS (commented out)
+# Build and Install HiGHS from source
 # ------------------------------------------------------------------------------
-# RUN cd /tmp && \
-#     wget -q https://github.com/ERGO-Code/HiGHS/releases/download/v1.7.0/HiGHS-1.7.0.tar.gz && \
-#     tar -xzf HiGHS-1.7.0.tar.gz && \
-#     cd HiGHS-1.7.0 && \
-#     mkdir build && cd build && \
-#     cmake .. && make -j$(nproc) && make install && \
-#     rm -rf /tmp/HiGHS*
+RUN cd /tmp && \
+    # 1. Download the source code
+    wget -q https://github.com/ERGO-Code/HiGHS/archive/refs/tags/v1.7.0.tar.gz -O HiGHS-1.7.0.tar.gz && \
+    # 2. Extract the archive
+    tar -xzf HiGHS-1.7.0.tar.gz && \
+    cd HiGHS-1.7.0 && \
+    # 3. Configure the build using CMake
+    mkdir build && \
+    cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    # 4. Compile and install the solver
+    cmake --build . --parallel $(nproc) && \
+    cmake --install . && \
+    # 5. Clean up the source and build files
+    rm -rf /tmp/HiGHS*
 
 # ------------------------------------------------------------------------------
 # Install CBC and GLPK
@@ -70,7 +78,6 @@ RUN /opt/venv/bin/pip install --upgrade pip && \
 FROM minizinc/minizinc:latest AS final
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Python in final image so python3/pip commands work
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -83,21 +90,29 @@ RUN groupadd --gid 1001 appgroup && \
 
 # Copy Python environment and solver binaries from builder
 COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /usr/local /usr/local
 COPY --from=builder /opt/z3/bin/z3 /usr/bin/z3
 COPY --from=builder /opt/cvc5/bin/cvc5 /usr/bin/cvc5
 COPY --from=builder /usr/bin/cbc /usr/bin/cbc
 COPY --from=builder /usr/bin/glpsol /usr/bin/glpsol
 COPY --from=builder /usr/local/bin/highs /usr/local/bin/highs
+COPY --from=builder /usr/lib/x86_64-linux-gnu/lib* /usr/lib/x86_64-linux-gnu/
 
-# Optional: Verify all tools are correctly installed
+# --- Configure the Dynamic Linker ---
+RUN ldconfig
+
+# Add the venv to the PATH for all users
+ENV PATH="/opt/venv/bin:$PATH"
+
+# --- Final Verification Step ---
 RUN python3 --version && \
     pip --version && \
     minizinc --version && \
     z3 --version && \
     cvc5 --version && \
-#     cbc -quit | head -n 1 && \
-#     glpsol --version && \
-    echo "\nAll solvers and tools installed successfully."
+    cbc -quit | head -n 1 && \
+    glpsol --version && \
+    highs --version && \
 
 # Set working directory
 WORKDIR /home/appuser/cdmo
