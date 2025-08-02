@@ -11,6 +11,7 @@ services:
     # Keep the container running and allow for interactive shell access
     stdin_open: true # Equivalent to -i in docker run
     tty: true        # Equivalent to -t in docker run
+    command: /bin/bash
 
     # --- Volume Mounts for Seamless File Sync ---
     # This is the key improvement. It links local folders to folders inside the container.

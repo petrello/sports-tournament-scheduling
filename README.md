@@ -106,7 +106,7 @@ This project uses Docker Compose to simplify container management.
 2.  **Access the Interactive Shell:**
     To get an interactive `bash` shell inside the running container, execute:
     ```bash
-    docker-compose exec scheduler bash
+    docker-compose exec sports_tournament_scheduling bash
     ```
     You are now inside the container at the `/home/appuser/cdmo` directory, with all solvers and tools ready to use.
 

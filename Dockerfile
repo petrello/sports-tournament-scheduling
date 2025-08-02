@@ -1,121 +1,115 @@
 # ==============================================================================
 # Stage 1: Builder
-#
-# Base image is minizinc/minizinc, which provides the full CP toolchain.
-# This builder stage will add all SMT, MIP, and Python dependencies on top.
 # ==============================================================================
 FROM minizinc/minizinc:latest AS builder
 
-# Set environment variables to prevent interactive prompts during installation
-ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-# --- Install System Dependencies & Solvers ---
-# This is done in a single RUN command to optimize Docker layer caching.
-RUN apt-get update && \
-    # Install utilities needed for adding repositories and downloading files
-    apt-get install -y --no-install-recommends \
-        wget \
-        gnupg \
-        software-properties-common \
-        ca-certificates \
-        unzip \
-        python3-venv && \
-    \
-    # --- SMT Solvers ---
-    # 1. Install Z3 CLI (may already be present, but this ensures it)
-    apt-get install -y --no-install-recommends z3 && \
-    \
-    # 2. Install CVC5 CLI from its official PPA for the latest version
-    wget -qO- https://cvc5.github.io/cvc5-repo/keys/cvc5-official-key.asc | gpg --dearmor -o /usr/share/keyrings/cvc5-official-keyring.gpg && \
-    # Detect Debian version for CVC5 repository
-    . /etc/os-release && \
-    echo "deb [signed-by=/usr/share/keyrings/cvc5-official-keyring.gpg] https://cvc5.github.io/cvc5-repo/debian/ $VERSION_CODENAME main" > /etc/apt/sources.list.d/cvc5-official.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends cvc5 && \
-    \
-    # --- MIP Solvers ---
-    # 3. Install CBC and GLPK from Debian repositories
-    apt-get install -y --no-install-recommends coinor-cbc glpk-utils && \
-    \
-    # 4. Install HiGHS by downloading the pre-compiled binary
-    wget https://github.com/ERGO-Code/HiGHS/releases/download/v1.7.0/HiGHS-1.7.0-Linux.zip -O HiGHS.zip && \
-    unzip HiGHS.zip && \
-    mv ./HiGHS-1.7.0-Linux/bin/highs /usr/local/bin/highs && \
-    chmod +x /usr/local/bin/highs && \
-    \
-    # Clean up build-stage artifacts
-    rm -rf /var/lib/apt/lists/* HiGHS.zip HiGHS-1.7.0-Linux
+# Install system packages
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip python3-dev git \
+    wget curl unzip build-essential cmake python3-venv \
+    software-properties-common ca-certificates gnupg && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# --- Install Python Dependencies ---
-# Create a virtual environment for clean package management
+# ------------------------------------------------------------------------------
+# Install Z3 (CLI only)
+# ------------------------------------------------------------------------------
+RUN cd /tmp && \
+    wget -q https://github.com/Z3Prover/z3/releases/download/z3-4.15.2/z3-4.15.2-x64-glibc-2.39.zip && \
+    unzip -q z3-4.15.2-x64-glibc-2.39.zip && \
+    mkdir -p /opt/z3/bin && \
+    mv z3-4.15.2-x64-glibc-2.39/bin/z3 /opt/z3/bin/ && \
+    chmod +x /opt/z3/bin/z3 && \
+    rm -rf /tmp/z3*
+
+# ------------------------------------------------------------------------------
+# Install cvc5 (static build)
+# ------------------------------------------------------------------------------
+RUN cd /tmp && \
+    wget -q https://github.com/cvc5/cvc5/releases/download/cvc5-1.3.0/cvc5-Linux-x86_64-static.zip && \
+    unzip -q cvc5-Linux-x86_64-static.zip && \
+    mkdir -p /opt/cvc5/bin && \
+    mv cvc5-Linux-x86_64-static/bin/cvc5 /opt/cvc5/bin/ && \
+    chmod +x /opt/cvc5/bin/cvc5 && \
+    rm -rf /tmp/cvc5*
+
+# ------------------------------------------------------------------------------
+# Optional: Install HiGHS (commented out)
+# ------------------------------------------------------------------------------
+# RUN cd /tmp && \
+#     wget -q https://github.com/ERGO-Code/HiGHS/releases/download/v1.7.0/HiGHS-1.7.0.tar.gz && \
+#     tar -xzf HiGHS-1.7.0.tar.gz && \
+#     cd HiGHS-1.7.0 && \
+#     mkdir build && cd build && \
+#     cmake .. && make -j$(nproc) && make install && \
+#     rm -rf /tmp/HiGHS*
+
+# ------------------------------------------------------------------------------
+# Install CBC and GLPK
+# ------------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    coinor-cbc glpk-utils && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------------------------
+# Set up Python virtual environment
+# ------------------------------------------------------------------------------
 RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy the requirements file into a separate layer to leverage caching
-COPY requirements.txt .
-
-# Install the Python packages into the virtual environment
-RUN . /opt/venv/bin/activate && \
-    pip install --upgrade pip && \
-    pip install -r requirements.txt
-
+COPY requirements.txt /tmp/requirements.txt
+RUN /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install -r /tmp/requirements.txt
 
 # ==============================================================================
 # Stage 2: Final Image
-#
-# This stage creates the final, lean image, also based on minizinc.
-# We copy the venv and solvers from the builder, keeping the MiniZinc base.
 # ==============================================================================
 FROM minizinc/minizinc:latest AS final
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH="/opt/venv/bin:$PATH"
 
-# --- Create a non-root user for security ---
+# Install Python in final image so python3/pip commands work
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
 RUN groupadd --gid 1001 appgroup && \
     useradd --uid 1001 --gid 1001 --shell /bin/bash --create-home appuser
 
-# --- Copy Artifacts from Builder Stage ---
+# Copy Python environment and solver binaries from builder
 COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder /usr/bin/z3 /usr/bin/z3
-COPY --from=builder /usr/bin/cvc5 /usr/bin/cvc5
+COPY --from=builder /opt/z3/bin/z3 /usr/bin/z3
+COPY --from=builder /opt/cvc5/bin/cvc5 /usr/bin/cvc5
 COPY --from=builder /usr/bin/cbc /usr/bin/cbc
 COPY --from=builder /usr/bin/glpsol /usr/bin/glpsol
 COPY --from=builder /usr/local/bin/highs /usr/local/bin/highs
 
-# Add the venv to the PATH for all users
-ENV PATH="/opt/venv/bin:$PATH"
-
-# --- Final Verification Step ---
-# This RUN command checks that all installed components are available and
-# executable. If any command fails, the Docker build will stop.
-RUN echo "--- Verifying Python and Pip installations ---" && \
-    python3 --version && \
+# Optional: Verify all tools are correctly installed
+RUN python3 --version && \
     pip --version && \
-    echo "\n--- Verifying CP Solver installation ---" && \
     minizinc --version && \
-    echo "\n--- Verifying SMT Solver installations ---" && \
     z3 --version && \
     cvc5 --version && \
-    echo "\n--- Verifying MIP Solver installations ---" && \
-    cbc -quit | head -n 1 && \
-    glpsol --version && \
-    highs --version && \
-    echo "\n\n***************************************************" && \
-    echo "* All solvers and tools installed successfully!  *" && \
-    echo "***************************************************"
+#     cbc -quit | head -n 1 && \
+#     glpsol --version && \
+    echo "\nAll solvers and tools installed successfully."
 
-# Set the working directory
+# Set working directory
 WORKDIR /home/appuser/cdmo
 
-# Copy the project source code into the container
+# Copy application source
 COPY . .
 
-# Change ownership of the project files to the non-root user
+# Set file ownership to appuser
 RUN chown -R appuser:appgroup /home/appuser/cdmo
 
-# Switch to the non-root user
+# Switch to non-root user
 USER appuser
 
-# Set the default command to open a bash shell
+# Start interactive shell
 CMD ["/bin/bash"]
