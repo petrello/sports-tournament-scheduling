@@ -1,0 +1,86 @@
+{
+    "ha-gecode": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "ha-nosymm-gecode": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "ha-noglob-gecode": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "ha-chuffed": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "ha-nosymm-chuffed": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "ha-noglob-chuffed": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "ha-restart-gecode": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "ha-nosymm-restart-gecode": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "ha-noglob-restart-gecode": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "rr-gecode": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "rr-chuffed": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "rr-opt-gecode": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "rr-gecode-restart": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    },
+    "rr-opt-gecode-restart": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
+    }
+}
