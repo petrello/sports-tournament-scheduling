@@ -79,6 +79,11 @@ EXPERIMENTS_CONFIG = {
         'cp_solver': 'gecode',
         'optimization': 'true',
     },
+    'rr-opt-chuffed': {
+        'model_path': 'cp_model_rr_opt.mzn',
+        'cp_solver': 'chuffed',
+        'optimization': 'true',
+    },
 
     # Experiments with Round-Robin method and restart
     'rr-gecode-restart': {

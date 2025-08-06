@@ -713,5 +713,11 @@
         "optimal": false,
         "obj": "None",
         "sol": []
+    },
+    "rr-opt-chuffed": {
+        "time": 300,
+        "optimal": false,
+        "obj": "None",
+        "sol": []
     }
 }
