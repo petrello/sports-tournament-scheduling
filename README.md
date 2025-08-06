@@ -55,24 +55,24 @@ a solution can be obtained within the time limit, i.e. $5$ minutes.
 
 ```
 .
-├── instances         
-|   ├── CP              # Stores the results of CP optimization technology 
-|   ├── SAT             # Stores the results of SAT optimization technology    
-|   ├── SMT             # Stores the results of SMT optimization technology
-│   └── MIP             # Stores the results of MIP optimization technology
-├── res         
-|   ├── CP              # Stores the results of CP optimization technology 
-|   ├── SAT             # Stores the results of SAT optimization technology    
-|   ├── SMT             # Stores the results of SMT optimization technology
-│   └── MIP             # Stores the results of MIP optimization technology
-├── source
-|   ├── CP              # Contains the source code for CP optimization technology
-|   ├── SAT             # Contains the source code for SAT optimization technology
-|   ├── SMT             # Contains the source code for SMT optimization technology
-│   └── MIP             # Contains the source code for MIP optimization technology
+├── instances            # Contains the instances of the STS problem
+|   ├── CP
+|   ├── SAT
+|   ├── SMT
+│   └── MIP
+├── res                  # Contains the results of the experiments
+|   ├── CP               
+|   ├── SAT
+|   ├── SMT
+│   └── MIP
+├── source               # Contains the source code for the models implmeneted to solve the STS problem
+|   ├── CP 
+|   ├── SAT
+|   ├── SMT
+│   └── MIP
 ├── .gitignore
 ├── docker-compose.yaml  # Docker Compose file to manage the container
-├── Dockerfile
+├── Dockerfile           # Dockerfile to build the container image
 ├── LICENSE
 ├── README.md
 ├── requirements.txt     # Python dependencies for the project
@@ -88,7 +88,7 @@ The entire development environment, including all solvers and Python dependencie
 * [Docker](https://www.docker.com/get-started) installed on your local machine.
 * You have cloned this repository. For example:
     ```bash
-    git clone [https://github.com/petrello/sports-tournament-scheduling.git](https://github.com/petrello/sports-tournament-scheduling.git)
+    git clone https://github.com/petrello/sports-tournament-scheduling.git
     cd sports-tournament-scheduling
     ```
 
