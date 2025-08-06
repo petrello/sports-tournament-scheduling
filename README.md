@@ -1,4 +1,4 @@
-# 🏈 Modelling and Solving the Sports Tournament Scheduling (STS) problem
+# 🏈 A Multi-Paradigm Approach to the Sports Tournament Scheduling Problem
 
 > Project work for the "Combinatorial Decision Making and Optimization" 
 > course at Alma Mater Studiorum - University of Bologna.
