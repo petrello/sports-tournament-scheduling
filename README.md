@@ -101,7 +101,7 @@ This project uses Docker Compose to simplify container management.
     ```bash
     docker-compose up --build -d
     ```
-    The `-d` flag runs the container in detached mode.
+    The `-d` flag runs the container in detached mode. Remove `--build` and `-d` if you want to run it without building.
 
 2.  **Access the Interactive Shell:**
     To get an interactive `bash` shell inside the running container, execute:
