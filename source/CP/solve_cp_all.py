@@ -14,19 +14,9 @@ instances_path = pathlib.Path(__file__).parent.parent.parent / 'instances' / 'CP
 res_dir = pathlib.Path(__file__).parent.parent.parent / 'res' / 'CP'
 
 EXPERIMENTS_CONFIG = {
-    # Experiments with Home-Away method
+    # --- Home-Away (HA) ---
     'ha-gecode': {
         'model_path': 'cp_model_ha.mzn',
-        'cp_solver': 'gecode',
-        'optimization': 'false',
-    },
-    'ha-nosymm-gecode': {
-        'model_path': 'cp_model_ha_no_symm.mzn',
-        'cp_solver': 'gecode',
-        'optimization': 'false',
-    },
-    'ha-noglob-gecode': {
-        'model_path': 'cp_model_ha_no_global.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
@@ -35,18 +25,18 @@ EXPERIMENTS_CONFIG = {
         'cp_solver': 'chuffed',
         'optimization': 'false',
     },
+    'ha-nosymm-gecode': {
+        'model_path': 'cp_model_ha_no_symm.mzn',
+        'cp_solver': 'gecode',
+        'optimization': 'false',
+    },
     'ha-nosymm-chuffed': {
         'model_path': 'cp_model_ha_no_symm.mzn',
         'cp_solver': 'chuffed',
         'optimization': 'false',
     },
-    'ha-noglob-chuffed': {
-        'model_path': 'cp_model_ha_no_global.mzn',
-        'cp_solver': 'chuffed',
-        'optimization': 'false',
-    },
 
-    # Experiments with Home-Away method and restart
+    # --- Home-Away (HA) + restart ---
     'ha-restart-gecode': {
         'model_path': 'cp_model_ha_restart.mzn',
         'cp_solver': 'gecode',
@@ -57,13 +47,8 @@ EXPERIMENTS_CONFIG = {
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
-    'ha-noglob-restart-gecode': {
-        'model_path': 'cp_model_ha_no_global_restart.mzn',
-        'cp_solver': 'gecode',
-        'optimization': 'false',
-    },
 
-    # Experiments with Round-Robin method
+    # --- Round-Robin (RR) ---
     'rr-gecode': {
         'model_path': 'cp_model_rr.mzn',
         'cp_solver': 'gecode',
@@ -74,6 +59,18 @@ EXPERIMENTS_CONFIG = {
         'cp_solver': 'chuffed',
         'optimization': 'false',
     },
+    'rr-nosymm-gecode': {
+        'model_path': 'cp_model_rr_no_symm.mzn',
+        'cp_solver': 'gecode',
+        'optimization': 'false',
+    },
+    'rr-nosymm-chuffed': {
+        'model_path': 'cp_model_rr_no_symm.mzn',
+        'cp_solver': 'chuffed',
+        'optimization': 'false',
+    },
+
+    # --- Round-Robin (RR) optimization ---
     'rr-opt-gecode': {
         'model_path': 'cp_model_rr_opt.mzn',
         'cp_solver': 'gecode',
@@ -84,15 +81,35 @@ EXPERIMENTS_CONFIG = {
         'cp_solver': 'chuffed',
         'optimization': 'true',
     },
+    'rr-nosymm-opt-gecode': {
+        'model_path': 'cp_model_rr_no_symm_opt.mzn',
+        'cp_solver': 'gecode',
+        'optimization': 'true',
+    },
+    'rr-nosymm-opt-chuffed': {
+        'model_path': 'cp_model_rr_no_symm_opt.mzn',
+        'cp_solver': 'chuffed',
+        'optimization': 'true',
+    },
 
-    # Experiments with Round-Robin method and restart
+    # --- Round-Robin (RR) + restart ---
     'rr-gecode-restart': {
         'model_path': 'cp_model_rr_restart.mzn',
         'cp_solver': 'gecode',
         'optimization': 'false',
     },
+    'rr-nosymm-gecode-restart': {
+        'model_path': 'cp_model_rr_no_symm_restart.mzn',
+        'cp_solver': 'gecode',
+        'optimization': 'false',
+    },
     'rr-opt-gecode-restart': {
         'model_path': 'cp_model_rr_restart_opt.mzn',
+        'cp_solver': 'gecode',
+        'optimization': 'true',
+    },
+    'rr-nosymm-opt-gecode-restart': {
+        'model_path': 'cp_model_rr_no_symm_opt_restart.mzn',
         'cp_solver': 'gecode',
         'optimization': 'true',
     },
@@ -102,11 +119,11 @@ EXPERIMENTS_CONFIG = {
 def main():
     # Find all .dzn files in the instances directory
     dzn_files = glob.glob(os.path.join(instances_path, "*.dzn"))
-    
+
     if not dzn_files:
         print(f"No .dzn files found in {instances_path}")
         return 1
-    
+
     # Sort files for consistent ordering
     dzn_files.sort()
 
@@ -196,6 +213,7 @@ def main():
     print(f"* {'All CP experiments completed!'.center(46)} *")
     print("*" * 50)
     return 0
+
 
 if __name__ == '__main__':
     main()
