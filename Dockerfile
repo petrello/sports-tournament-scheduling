@@ -112,7 +112,7 @@ RUN python3 --version && \
     cvc5 --version && \
     cbc -quit | head -n 1 && \
     glpsol --version && \
-    highs --version && \
+    highs --version
 
 # Set working directory
 WORKDIR /home/appuser/cdmo
