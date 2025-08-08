@@ -79,7 +79,7 @@ constraint
   forall(p in Periods)( pos[1,p] = p );
 
 
-%--- Symmetry breaking: lexicographic order between weeks (rows)
+%--- Symmetry breaking: lexicographic order between weeks (columns)
 constraint
   forall(w in 1..weeks-1)(
     lex_less(
