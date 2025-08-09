@@ -21,23 +21,35 @@ set of int: Periods = 1..periods;
 %====================================================================
 /* Circle-method pairs (no canonicalization here).
    Orientation (home/away) is decided by the decision var `swap`.       */
-array[Weeks, Periods] of int: A =
-  array2d(Weeks, Periods,
-    [ if p = 1 then n else ((w-1) + (p-1)) mod (n-1) + 1 endif
-    | w in Weeks, p in Periods ]);
+array[Periods, Weeks] of int: Home_raw =
+  array2d(Periods, Weeks,
+    [ if p = 1 then n
+      else ((w-1) + (p-1)) mod (n-1) + 1
+      endif
+    | p in Periods, w in Weeks ]);
 
-array[Weeks, Periods] of int: B =
-  array2d(Weeks, Periods,
-    [ if p = 1 then w else ((n-1) - (p-1) + (w-1)) mod (n-1) + 1 endif
-    | w in Weeks, p in Periods ]);
+array[Periods, Weeks] of int: Away_raw =
+  array2d(Periods, Weeks,
+    [ if p = 1 then w
+      else ((n-1) - (p-1) + (w-1)) mod (n-1) + 1
+      endif
+    | p in Periods, w in Weeks ]);
+
+array[Periods, Weeks] of int: Home =          % home team
+  array2d(Periods, Weeks,
+    [ max(Home_raw[p,w], Away_raw[p,w]) | p in Periods, w in Weeks ]);
+
+array[Periods, Weeks] of int: Away =          % away team
+  array2d(Periods, Weeks,
+    [ min(Home_raw[p,w], Away_raw[p,w]) | p in Periods, w in Weeks ]);
 
 %====================================================================
 % DECISION VARIABLES
 %====================================================================
-% pos[w,p] = which circle-method slot occupies row p in week w
-array[Weeks,Periods] of var Periods: pos;
-% swap[w,p] = if true, flip A↔B for the match placed at (w,p)
-array[Weeks,Periods] of var bool:    swap;
+% pos[p,w] = which circle-method slot occupies row p in week w
+array[Periods,Weeks] of var Periods: pos;
+% swap[p,w] = if true, flip A↔B for the match placed at (p,w)
+array[Periods,Weeks] of var bool:    swap;
 
 %====================================================================
 % CONSTRAINTS
@@ -45,15 +57,15 @@ array[Weeks,Periods] of var bool:    swap;
 
 %--- Main constraint: each week uses a permutation of all matches exactly once
 constraint
-  forall(w in Weeks)( alldifferent([ pos[w,p] | p in Periods ]) );
+  forall(w in Weeks)( alldifferent([ pos[p,w] | p in Periods ]) );
 
 %--- Main constraint: each team plays in the same period at most twice
 constraint
   forall(p in Periods)(
     let {
       array[1..2*weeks] of var Teams: rowVars =
-           [ A[w, pos[w,p]] | w in Weeks ] ++
-           [ B[w, pos[w,p]] | w in Weeks ],
+           [ Home[pos[p,w], w] | w in Weeks ] ++
+           [ Away[pos[p,w], w] | w in Weeks ],
       array[Teams] of int: cover = [ t | t in Teams ],
       array[Teams] of int: low   = [ 0 | _ in Teams ],
       array[Teams] of int: up   = [ 2 | _ in Teams ]
@@ -62,15 +74,15 @@ constraint
   );
 
 %--- Symmetry breaking: fix week 1 permutation and its orientation
-constraint forall(p in Periods)( pos[1,p] = p );
-constraint forall(p in Periods)( swap[1,p] = false );
+constraint forall(p in Periods)( pos[p,1] = p );
+constraint forall(p in Periods)( swap[p,1] = false );
 
 %--- Symmetry breaking: lexicographic order between periods (rows)
 constraint
   forall(p in 1..periods-1)(
     lex_less(
-      [ B[w, pos[w,p]]   | w in Weeks ] ++ [ A[w, pos[w,p]]   | w in Weeks ],
-      [ B[w, pos[w,p+1]] | w in Weeks ] ++ [ A[w, pos[w,p+1]] | w in Weeks ]
+      [ Away[pos[p,w],   w] | w in Weeks ] ++ [ Home[pos[p,w],   w] | w in Weeks ],
+      [ Away[pos[p+1,w], w] | w in Weeks ] ++ [ Home[pos[p+1,w], w] | w in Weeks ]
     )
   );
 
@@ -78,8 +90,8 @@ constraint
 constraint
   forall(w in 1..weeks-1)(
     lex_less(
-      [ B[w,   pos[w,   p]] | p in Periods ] ++ [ A[w,   pos[w,   p]] | p in Periods ],
-      [ B[w+1, pos[w+1, p]] | p in Periods ] ++ [ A[w+1, pos[w+1, p]] | p in Periods ]
+      [ Away[pos[p,w],     w] | p in Periods ] ++ [ Home[pos[p,w],     w] | p in Periods ],
+      [ Away[pos[p,w+1], w+1] | p in Periods ] ++ [ Home[pos[p,w+1], w+1] | p in Periods ]
     )
   );
 
@@ -91,9 +103,9 @@ array[Teams] of var 0..weeks: homeCount;
 constraint
   forall(t in Teams)(
     homeCount[t] =
-      sum(w in Weeks, p in Periods)(
-          bool2int( (A[w, pos[w,p]] = t) /\ (not swap[w,p]) )   % A at home
-        + bool2int( (B[w, pos[w,p]] = t) /\        swap[w,p] )  % B at home
+      sum(p in Periods, w in Weeks)(
+          bool2int( (Home[pos[p,w], w] = t) /\ (not swap[p,w]) )  
+        + bool2int( (Away[pos[p,w], w] = t) /\        swap[p,w] )  
       )
   );
 
@@ -107,10 +119,10 @@ constraint
 solve
 :: seq_search([
       % first place the matches (permutations)…
-      int_search([ pos[w,p]  | w in Weeks, p in Periods ],
+      int_search([ pos[p,w]  | p in Periods, w in Weeks],
                  first_fail, indomain_min, complete),
       % …then decide the flips
-      int_search([ swap[w,p] | w in Weeks, p in Periods ],
+      int_search([ swap[p,w] | p in Periods, w in Weeks],
                  first_fail, indomain_min, complete)
    ])
  minimize maxImbalance;
@@ -118,11 +130,11 @@ solve
 %====================================================================
 % OUTPUT
 %====================================================================
-function string: pair(int: w, int: p) =
-  if not fix(swap[w,p]) then
-      "[" ++ show(A[w, pos[w,p]]) ++ " , " ++ show(B[w, pos[w,p]]) ++ "]"
+function string: pair(int: p, int: w) =
+  if not fix(swap[p,w]) then
+      "[" ++ show(Home[pos[p,w], w]) ++ " , " ++ show(Away[pos[p,w], w]) ++ "]"
   else
-      "[" ++ show(B[w, pos[w,p]]) ++ " , " ++ show(A[w, pos[w,p]]) ++ "]"
+      "[" ++ show(Away[pos[p,w], w]) ++ " , " ++ show(Home[pos[p,w], w]) ++ "]"
   endif;
 
 output [
@@ -130,7 +142,7 @@ output [
   "[\n" ++
     concat([
       "  [" ++
-        concat([ pair(w,p) ++ (if w < weeks then " , " else "" endif)
+        concat([ pair(p,w) ++ (if w < weeks then " , " else "" endif)
         | w in Weeks ]) ++ "]" ++
       (if p < periods then " ,\n" else "\n" endif)
     | p in Periods ]) ++ "]\n"

@@ -20,35 +20,35 @@ set of int: Periods = 1..periods;
 % PRECOMPUTED DATA
 %====================================================================
 /* Circle method pairs (raw), then canonicalize each match so that
-   A = max(team1, team2), B = min(team1, team2).       */
+   Home = max(team1, team2), Away = min(team1, team2).      */
 
-array[Weeks, Periods] of int: a_raw =
-  array2d(Weeks, Periods,
+array[Periods, Weeks] of int: Home_raw =
+  array2d(Periods, Weeks,
     [ if p = 1 then n
       else ((w-1) + (p-1)) mod (n-1) + 1
       endif
-    | w in Weeks, p in Periods ]);
+    | p in Periods, w in Weeks ]);
 
-array[Weeks, Periods] of int: b_raw =
-  array2d(Weeks, Periods,
+array[Periods, Weeks] of int: Away_raw =
+  array2d(Periods, Weeks,
     [ if p = 1 then w
       else ((n-1) - (p-1) + (w-1)) mod (n-1) + 1
       endif
-    | w in Weeks, p in Periods ]);
+    | p in Periods, w in Weeks ]);
 
-array[Weeks, Periods] of int: A =          % home team
-  array2d(Weeks, Periods,
-    [ max(a_raw[w,p], b_raw[w,p]) | w in Weeks, p in Periods ]);
+array[Periods, Weeks] of int: Home =          % home team
+  array2d(Periods, Weeks,
+    [ max(Home_raw[p,w], Away_raw[p,w]) | p in Periods, w in Weeks ]);
 
-array[Weeks, Periods] of int: B =          % away team
-  array2d(Weeks, Periods,
-    [ min(a_raw[w,p], b_raw[w,p]) | w in Weeks, p in Periods ]);
+array[Periods, Weeks] of int: Away =          % away team
+  array2d(Periods, Weeks,
+    [ min(Home_raw[p,w], Away_raw[p,w]) | p in Periods, w in Weeks ]);
 
 %====================================================================
 % DECISION VARIABLES
 %====================================================================
-% pos[w,p] = which match occupies row p in week w
-array[Weeks, Periods] of var Periods: pos;
+% pos[p,w] = which match occupies row p in week w
+array[Periods, Weeks] of var Periods: pos;
 
 %====================================================================
 % CONSTRAINTS
@@ -57,7 +57,7 @@ array[Weeks, Periods] of var Periods: pos;
 %--- Main constraint: each week uses a match exactly once
 constraint
   forall(w in Weeks)(
-    alldifferent([ pos[w,p] | p in Periods ])
+    alldifferent([ pos[p,w] | p in Periods ])
   );
 
 %--- Main constraint: each team plays in the same period at most twice
@@ -65,8 +65,8 @@ constraint
   forall(p in Periods)(
     let {
       array[1..2*weeks] of var Teams: rowVars =
-           [ A[w, pos[w,p]] | w in Weeks ] ++
-           [ B[w, pos[w,p]] | w in Weeks ],
+           [ Home[pos[p,w], w] | w in Weeks ] ++
+           [ Away[pos[p,w], w] | w in Weeks ],
       array[Teams] of int: cover = [ t | t in Teams ],
       array[Teams] of int: low   = [ 0 | _ in Teams ],
       array[Teams] of int: up   = [ 2 | _ in Teams ]
@@ -76,14 +76,15 @@ constraint
 
 %--- Symmetry breaking: fix week 1 to the identity permutation
 constraint
-  forall(p in Periods)( pos[1,p] = p );
+  forall(p in Periods)( pos[p,1] = p );
+
 
 %--- Symmetry breaking: lexicographic order between periods (rows)
 constraint
   forall(p in 1..periods-1)(
     lex_less(
-      [ B[w, pos[w,p]]   | w in Weeks ] ++ [ A[w, pos[w,p]]   | w in Weeks ],
-      [ B[w, pos[w,p+1]] | w in Weeks ] ++ [ A[w, pos[w,p+1]] | w in Weeks ]
+      [ Away[pos[p,w],   w] | w in Weeks ] ++ [ Home[pos[p,w],   w] | w in Weeks ],
+      [ Away[pos[p+1,w], w] | w in Weeks ] ++ [ Home[pos[p+1,w], w] | w in Weeks ]
     )
   );
 
@@ -91,29 +92,29 @@ constraint
 constraint
   forall(w in 1..weeks-1)(
     lex_less(
-      [ B[w,   pos[w,   p]] | p in Periods ] ++ [ A[w,   pos[w,   p]] | p in Periods ],
-      [ B[w+1, pos[w+1, p]] | p in Periods ] ++ [ A[w+1, pos[w+1, p]] | p in Periods ]
+      [ Away[pos[p,   w],   w] | p in Periods ] ++ [ Home[pos[p,   w],   w] | p in Periods ],
+      [ Away[pos[p, w+1], w+1] | p in Periods ] ++ [ Home[pos[p, w+1], w+1] | p in Periods ]
     )
   );
 
 %====================================================================
 % SEARCH STRATEGY
 %====================================================================
-solve :: int_search([ pos[w,p] | p in Periods, w in Weeks ], first_fail, indomain_random) 
+solve :: int_search([ pos[p,w] | p in Periods, w in Weeks ], first_fail, indomain_random) 
       :: restart_luby(100)
       satisfy;
 
 %====================================================================
 % OUTPUT
 %====================================================================
-function string: pair(int: w, int: p) =
-  "[" ++ show(A[w, pos[w,p]]) ++ " , " ++ show(B[w, pos[w,p]]) ++ "]";
+function string: pair(int: p, int: w) =
+  "[" ++ show(Home[pos[p,w], w]) ++ " , " ++ show(Away[pos[p,w], w]) ++ "]";
 
 output [
   "[\n" ++
   concat([
     "  [" ++
-      concat([ pair(w,p) ++ (if w < weeks then " , " else "" endif)
+      concat([ pair(p, w) ++ (if w < weeks then " , " else "" endif)
       | w in Weeks ]) ++ "]" ++
     (if p < periods then " ,\n" else "\n" endif)
   | p in Periods ]) ++ "]"
