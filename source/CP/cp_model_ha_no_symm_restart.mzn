@@ -51,8 +51,8 @@ constraint
       [ Home[p,w] | w in Weeks ]
     ++[ Away[p,w] | w in Weeks ],
       [ t | t in Teams ],
-      [ 0 | t in Teams ],
-      [ 2 | t in Teams ]
+      [ 0 | _ in Teams ],
+      [ 2 | _ in Teams ]
     )
   );
 

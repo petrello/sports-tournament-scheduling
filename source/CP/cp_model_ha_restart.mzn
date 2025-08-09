@@ -58,8 +58,8 @@ constraint
       [ Home[p,w] | w in Weeks ]
     ++[ Away[p,w] | w in Weeks ],
       [ t | t in Teams ],
-      [ 0 | t in Teams ],
-      [ 2 | t in Teams ]
+      [ 0 | _ in Teams ],
+      [ 2 | _ in Teams ]
     )
   );
 
@@ -69,12 +69,7 @@ constraint
     Home[p,1] = 2*p-1 /\ Away[p,1] = 2*p
   );
 
-%--- Symmetry breaking: lexicographic order on first row of Home by week
-constraint
-  lex_lesseq(
-    [ Home[1, w]   | w in 1..weeks-1 ],
-    [ Home[1, w+1] | w in 1..weeks-1 ]
-  );
+
 
 %--- Symmetry breaking: lexicographic order between periods
 constraint 
