@@ -94,7 +94,7 @@ def solve_smt_instance(model, solver_name, n_value, use_symmetry_breaking, optim
     """
     # --- 1. Build the appropriate solver from the model file ---
     if model.lower() == "rr":
-        solver, pos_vars, swap_vars, A, B, obj_var = SMTModelRR.build_solver(n_value, optimization)
+        solver, pos_vars, swap_vars, A, B, obj_var = SMTModelRR.build_solver(n_value, optimization, use_symmetry_breaking)
     elif model.lower() == "ha":
         solver = SMTModelHA.build_solver(n_value, use_symmetry_breaking)
         # Initialize RR-specific variables to None for consistency
