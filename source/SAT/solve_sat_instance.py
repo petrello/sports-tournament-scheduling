@@ -23,54 +23,64 @@ from pysat.solvers import Minisat22, Glucose42
 from sat_model_ha import SATModelHA
 from sat_model_rr import SATModelRR
 
+from sat_encodings import at_most_k
 
 def optimise_rr(n: int,
-                base_solver: z3.Solver,
-                max_imb_ge: List[z3.Bool],
-                timeout_sec: int = 300) -> tuple[int | None, z3.ModelRef | None]:
+                       rr_tuple: tuple,
+                       timeout_sec: int = 300) -> tuple[int | None, z3.ModelRef | None]:
     """
-    Perform binary search to minimize max imbalance.
-    Total runtime is limited to `timeout_sec` seconds.
+    Minimize max-imbalance via binary search using weekly home literals H.
+    rr_tuple is (solver, pos, swap, Home, Away, H).
+    For a bound B, enforce:
+        L = ceil((W-B)/2)  <=  home_count[t]  <=  U = floor((W+B)/2)
+    encoded via at_most_k on H[t,*] and on ~H[t,*].
     """
+    from math import ceil, floor
+
+    solver, pos, swap, Home, Away, H = rr_tuple
+    assert H is not None, "SATModelRR must be built with optimization=True to get H"
+
     W = n - 1
-    base_assertions = base_solver.assertions()
+    base_assertions = list(solver.assertions())
 
     lo, hi = 0, W
     best_val, best_model = None, None
     start_time = time.time()
 
     while lo <= hi:
-        # Compute remaining budget
+        # budget
         elapsed = time.time() - start_time
         remaining = timeout_sec - elapsed
         if remaining <= 0:
-            # out of budget
             break
 
         mid = (lo + hi) // 2
+        L = ceil((W - mid) / 2)
+        U = floor((W + mid) / 2)
 
         s = z3.Solver()
-        # Timeout for this iteration = remaining budget (ms)
         s.set("timeout", int(remaining * 1000))
+        s.add(base_assertions)
 
-        for a in base_assertions:
-            s.add(a)
+        # per–team bounds
+        for t in range(1, n + 1):
+            # sum(H[t,*]) ≤ U
+            s.add(*at_most_k(H[t], U, name=f"home_le_t{t}_U{U}"))
+            # sum(H[t,*]) ≥ L  ⇔  sum(~H[t,*]) ≤ W-L
+            s.add(*at_most_k([z3.Not(h) for h in H[t]], W - L, name=f"home_ge_t{t}_L{L}"))
 
-        if mid < W:
-            s.add(z3.Not(max_imb_ge[mid + 1]))
-
-        result = s.check()
-        if result == z3.sat:
+        res = s.check()
+        if res == z3.sat:
             best_val = mid
             best_model = s.model()
             hi = mid - 1
-        elif result == z3.unsat:
+        elif res == z3.unsat:
             lo = mid + 1
         else:
-            # `unknown` due to timeout or other reasons
             break
 
     return best_val, best_model
+
 
 def parse_variable_mappings(dimacs_lines: list[str]) -> dict[str, int]:
     """
@@ -120,8 +130,8 @@ def parse_decision_output(model_values: list[int],
                           model: str,
                           n: int,
                           varmap: dict[str, int],
-                          A=None,
-                          B=None) -> list[list[list[int]]]:
+                          Home=None,
+                          Away=None) -> list[list[list[int]]]:
     """
     Parse PySAT model (list of true literals) into a schedule matrix.
     Returns: schedule[p][w] = [home_team, away_team].
@@ -161,7 +171,7 @@ def parse_decision_output(model_values: list[int],
                         break
                 if chosen_k is None:
                     raise RuntimeError(f"No true pos var for week={w+1}, period={p+1}")
-                schedule[p][w] = [A[w][chosen_k], B[w][chosen_k]]
+                schedule[p][w] = [Home[w][chosen_k], Away[w][chosen_k]]
 
     return schedule
 
@@ -172,8 +182,8 @@ def parse_decision_output(model_values: list[int],
 def parse_optimization_output(z3_model: z3.ModelRef,
                               pos_vars: list[list[list[z3.BoolRef]]],
                               swap_vars: list[list[z3.BoolRef]],
-                              A: list[list[int]],
-                              B: list[list[int]]) -> list[list[list[int]]]:
+                              Home: list[list[int]],
+                              Away: list[list[int]]) -> list[list[list[int]]]:
     """
     Extract the schedule from a Z3 model
     """
@@ -196,9 +206,9 @@ def parse_optimization_output(z3_model: z3.ModelRef,
             # check if swap is active
             swapped = z3.is_true(z3_model.eval(swap_vars[w][p]))
             if swapped:
-                home, away = B[w][chosen_k], A[w][chosen_k]
+                home, away = Away[w][chosen_k], Home[w][chosen_k]
             else:
-                home, away = A[w][chosen_k], B[w][chosen_k]
+                home, away = Home[w][chosen_k], Away[w][chosen_k]
 
             period_matches.append([home, away])
         schedule.append(period_matches)
@@ -215,16 +225,20 @@ def solve_sat_instance(model, solver_name, n_value, use_symmetry_breaking, optim
         if model.lower() != "rr":
             raise ValueError("Optimization mode is only supported for RR model.")
 
-        # Build base SAT model with optimization variables
-        base_solver, pos_vars, swap_vars, A, B, max_imb_ge = SATModelRR.build_solver(n_value, optimization)
+        # Build RR with optimization to obtain H literals
+        rr_tuple = SATModelRR.build_solver(
+            n_value,
+            optimization=True,
+            use_symmetry_breaking_constraints=use_symmetry_breaking
+        )
+        base_solver, pos_vars, swap_vars, Home, Away, H = rr_tuple
 
         start_time = time.time()
-        opt_val, opt_model = optimise_rr(n_value, base_solver, max_imb_ge, timeout)
+        opt_val, opt_model = optimise_rr(n_value, rr_tuple, timeout)
         elapsed_time = time.time() - start_time
 
         if opt_model is not None:
-            # Parse schedule from the best model
-            solution = parse_optimization_output(opt_model, pos_vars, swap_vars, A, B)
+            solution = parse_optimization_output(opt_model, pos_vars, swap_vars, Home, Away)
             optimal = True
         else:
             solution = []
@@ -239,13 +253,19 @@ def solve_sat_instance(model, solver_name, n_value, use_symmetry_breaking, optim
             }
         }
 
+
     # Decision mode (HA or RR)
     if model.lower() == "ha":
         solver = SATModelHA.build_solver(n_value, use_symmetry_breaking)
         # Initialize RR-specific variables to None for consistency
-        pos, A, B = None, None, None
+        pos, Home, Away = None, None, None
     elif model.lower() == "rr":
-        solver, pos, _, A, B, _ = SATModelRR.build_solver(n_value, optimization)
+        solver, pos, _, Home, Away, _ = SATModelRR.build_solver(
+            n_value,
+            optimization=False,
+            use_symmetry_breaking_constraints=use_symmetry_breaking
+        )
+        
     else:
         raise ValueError(f"Unknown model: {model}")
 
@@ -287,8 +307,8 @@ def solve_sat_instance(model, solver_name, n_value, use_symmetry_breaking, optim
         model_values=model_values,
         model=model.lower(),
         n=n_value,
-        A=A,
-        B=B,
+        Home=Home,
+        Away=Away,
         varmap=varmap
     )
 
