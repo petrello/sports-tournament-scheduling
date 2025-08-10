@@ -27,7 +27,8 @@ class SMTModelRR:
     @staticmethod
     def build_solver(
         n: int,
-        optimization: bool
+        optimization: bool,
+        use_symmetry_breaking_constraints: bool
     ) -> tuple[
         Union[Solver, Optimize],
         List[List[Int]],                   # pos
@@ -97,27 +98,28 @@ class SMTModelRR:
         #====================================================================
         # SYMMETRY BREAKING
         #====================================================================
-        #--- Symmetry breaking: fix week 1 to identity permutation
-        for p in range(P):
-            solver.add(pos[0][p] == p + 1)
-            if swap is not None:
-                solver.add(swap[0][p] == False)
+        if use_symmetry_breaking_constraints:
+            #--- Symmetry breaking: fix week 1 to identity permutation
+            for p in range(P):
+                solver.add(pos[0][p] == p + 1)
+                if swap is not None:
+                    solver.add(swap[0][p] == False)
 
-        #--- Symmetry breaking: strict lex between periods (rows)
-        for p in range(P - 1):
-            Xp = [select_const(B[w], pos[w][p])     for w in range(W)] + \
-                 [select_const(A[w], pos[w][p])     for w in range(W)]
-            Yp = [select_const(B[w], pos[w][p + 1]) for w in range(W)] + \
-                 [select_const(A[w], pos[w][p + 1]) for w in range(W)]
-            solver.add(lex_less_seq(Xp, Yp))
+            #--- Symmetry breaking: strict lex between periods (rows)
+            for p in range(P - 1):
+                Xp = [select_const(B[w], pos[w][p])     for w in range(W)] + \
+                    [select_const(A[w], pos[w][p])     for w in range(W)]
+                Yp = [select_const(B[w], pos[w][p + 1]) for w in range(W)] + \
+                    [select_const(A[w], pos[w][p + 1]) for w in range(W)]
+                solver.add(lex_less_seq(Xp, Yp))
 
-        #--- Symmetry breaking: strict lex between weeks (columns)
-        for w in range(W - 1):
-            Xw = [select_const(B[w],     pos[w][p])     for p in range(P)] + \
-                 [select_const(A[w],     pos[w][p])     for p in range(P)]
-            Yw = [select_const(B[w + 1], pos[w + 1][p]) for p in range(P)] + \
-                 [select_const(A[w + 1], pos[w + 1][p]) for p in range(P)]
-            solver.add(lex_less_seq(Xw, Yw))
+            #--- Symmetry breaking: strict lex between weeks (columns)
+            for w in range(W - 1):
+                Xw = [select_const(B[w],     pos[w][p])     for p in range(P)] + \
+                    [select_const(A[w],     pos[w][p])     for p in range(P)]
+                Yw = [select_const(B[w + 1], pos[w + 1][p]) for p in range(P)] + \
+                    [select_const(A[w + 1], pos[w + 1][p]) for p in range(P)]
+                solver.add(lex_less_seq(Xw, Yw))
 
         #====================================================================
         # OPTIMIZATION (optional): minimize maximum home/away imbalance
