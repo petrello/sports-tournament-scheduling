@@ -54,22 +54,30 @@ def _parse_mip_solution(
                 for w_idx in range(W):
                     # PuLP keys are 1-based, so p_idx+1 and w_idx+1
                     p, w = p_idx + 1, w_idx + 1
-                    home_team = int(round(Home[p][w].varValue))
-                    away_team = int(round(Away[p][w].varValue))
+                    home_team = int(round(Home[(p,w)].varValue))
+                    away_team = int(round(Away[(p,w)].varValue))
                     row.append([home_team, away_team])
                 schedule.append(row)
 
         elif model_type == 'rr':
             pos, swap = model_vars['pos'], model_vars.get('swap')
-            A, B = model_vars['A'], model_vars['B']
+            Home, Away = model_vars['Home'], model_vars['Away']
             for p_idx in range(P):
                 row = []
                 for w_idx in range(W):
                     p, w = p_idx + 1, w_idx + 1
-                    k = int(round(pos[w][p].varValue)) - 1  # to 0-based index
-                    home, away = A[w_idx][k], B[w_idx][k]
+                    # Find which k has pos[(w,p,k)] == 1
+                    k = None
+                    for k_test in range(1, P + 1):
+                        if pos[(w, p, k_test)].varValue > 0.5:  # binary variable is 1
+                            k = k_test
+                            break
 
-                    if swap and int(round(swap[w][p].varValue)) == 1:
+                    if k is None:
+                        raise ValueError(f"No match index found for week {w}, period {p}")
+                    home, away = Home[w_idx][k-1], Away[w_idx][k-1]
+
+                    if swap and int(round(swap[(w,p)].varValue)) == 1:
                         home, away = away, home
                     row.append([home, away])
                 schedule.append(row)
@@ -99,8 +107,8 @@ def solve_mip_instance(
         model, Home, Away, *_ = MIPModelHA.build_model(n_value, use_symmetry_breaking)
         model_vars = {'Home': Home, 'Away': Away}
     elif model_type.lower() == "rr":
-        model, pos, swap, x, A, B, *_ = MIPModelRR.build_model(n_value, is_optimization)
-        model_vars = {'pos': pos, 'swap': swap, 'A': A, 'B': B}
+        model, pos, swap, Home, Away = MIPModelRR.build_model(n_value, use_symmetry_breaking, is_optimization)
+        model_vars = {'pos': pos, 'swap': swap, 'Home': Home, 'Away': Away}
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 

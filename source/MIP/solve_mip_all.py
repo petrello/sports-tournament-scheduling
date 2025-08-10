@@ -14,13 +14,6 @@ instances_path = pathlib.Path(__file__).parent.parent.parent / 'instances' / 'MI
 res_dir = pathlib.Path(__file__).parent.parent.parent / 'res' / 'MIP'
 
 EXPERIMENTS_CONFIG = {
-    # Experiments with Home-Away method
-    'ha-cbc': {
-        'model': 'ha',
-        'mip_solver': 'cbc',
-        'use_symmetry_breaking': 'true',
-        'optimization': 'false',
-    },
     'ha-glpk': {
         'model': 'ha',
         'mip_solver': 'glpk',
@@ -31,12 +24,6 @@ EXPERIMENTS_CONFIG = {
         'model': 'ha',
         'mip_solver': 'highs',
         'use_symmetry_breaking': 'true',
-        'optimization': 'false',
-    },
-    'ha-nosymm-cbc': {
-        'model': 'ha',
-        'mip_solver': 'cbc',
-        'use_symmetry_breaking': 'false',
         'optimization': 'false',
     },
     'ha-nosymm-glpk': {
@@ -53,37 +40,49 @@ EXPERIMENTS_CONFIG = {
     },
 
     # Experiments with Round-Robin method
-    'rr-cbc': {
-        'model': 'rr',
-        'mip_solver': 'cbc',
-        'use_symmetry_breaking': 'false',
-        'optimization': 'false',
-    },
     'rr-glpk': {
         'model': 'rr',
         'mip_solver': 'glpk',
-        'use_symmetry_breaking': 'false',
+        'use_symmetry_breaking': 'true',
         'optimization': 'false',
     },
     'rr-highs': {
         'model': 'rr',
         'mip_solver': 'highs',
+        'use_symmetry_breaking': 'true',
+        'optimization': 'false',
+    },
+    'rr-nosymm-glpk': {
+        'model': 'rr',
+        'mip_solver': 'glpk',
         'use_symmetry_breaking': 'false',
         'optimization': 'false',
     },
-    'rr-opt-cbc': {
+    'rr-nosymm-highs': {
         'model': 'rr',
-        'mip_solver': 'cbc',
+        'mip_solver': 'highs',
         'use_symmetry_breaking': 'false',
-        'optimization': 'true',
+        'optimization': 'false',
     },
     'rr-opt-glpk': {
+        'model': 'rr',
+        'mip_solver': 'glpk',
+        'use_symmetry_breaking': 'true',
+        'optimization': 'true',
+    },
+    'rr-opt-highs': {
+        'model': 'rr',
+        'mip_solver': 'highs',
+        'use_symmetry_breaking': 'true',
+        'optimization': 'true',
+    },
+    'rr-nosymm-opt-glpk': {
         'model': 'rr',
         'mip_solver': 'glpk',
         'use_symmetry_breaking': 'false',
         'optimization': 'true',
     },
-    'rr-opt-highs': {
+    'rr-nosymm-opt-highs': {
         'model': 'rr',
         'mip_solver': 'highs',
         'use_symmetry_breaking': 'false',
