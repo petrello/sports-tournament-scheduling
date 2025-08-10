@@ -44,16 +44,34 @@ EXPERIMENTS_CONFIG = {
     'rr-z3': {
         'model': 'rr',
         'smt_solver': 'z3',
-        'use_symmetry_breaking': 'false',
+        'use_symmetry_breaking': 'true',
         'optimization': 'false',
     },
     'rr-cvc5': {
         'model': 'rr',
         'smt_solver': 'cvc5',
-        'use_symmetry_breaking': 'false',
+        'use_symmetry_breaking': 'true',
         'optimization': 'false',
     },
     'rr-opt-z3': {
+        'model': 'rr',
+        'smt_solver': 'z3',
+        'use_symmetry_breaking': 'true',
+        'optimization': 'true',
+    },
+    'rr-nosymm-z3': {
+        'model': 'rr',
+        'smt_solver': 'z3',
+        'use_symmetry_breaking': 'false',
+        'optimization': 'false',
+    },
+    'rr-nosymm-cvc5': {
+        'model': 'rr',
+        'smt_solver': 'cvc5',
+        'use_symmetry_breaking': 'false',
+        'optimization': 'false',
+    },
+    'rr-nosymm-opt-z3': {
         'model': 'rr',
         'smt_solver': 'z3',
         'use_symmetry_breaking': 'false',
