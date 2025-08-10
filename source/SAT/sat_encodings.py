@@ -1,87 +1,106 @@
 from typing import List
+from z3 import And, Or, Not, Bool, BoolRef
 
-from z3 import Bool, Or, Not, And, BoolRef, Implies
-
+# ====================================================================
+# Pure SAT helpers (Boolean-only; easy to CNF via Tseitin)
+# ====================================================================
 
 def at_least_one(bs: List[BoolRef]) -> BoolRef:
-    """At least one variable is True."""
+    """ALO: at least one var is True → OR(vars)."""
     return Or(bs)
 
 def at_most_one(bs: List[BoolRef]) -> List[BoolRef]:
+    """Pairwise AMO: for all i<j, ¬(b_i ∧ b_j) → (¬b_i ∨ ¬b_j)."""
     return [
         Or(Not(bs[i]), Not(bs[j]))
         for i in range(len(bs))
-        for j in range(i+1, len(bs))
+        for j in range(i + 1, len(bs))
     ]
 
-def exactly_one(bs: list[BoolRef]) -> BoolRef:
-    return And([at_least_one(bs), *at_most_one(bs)])
+def exactly_one(bs: List[BoolRef]) -> BoolRef:
+    """EO: exactly one True = ALO ∧ AMO."""
+    return And(at_least_one(bs), *at_most_one(bs))
 
-
-def at_most_k(bool_vars: List[BoolRef], k: int, name: str) -> List:
+def at_most_k(bool_vars: List[BoolRef], k: int, name: str) -> List[BoolRef]:
     """
-    Generates CNF clauses for an 'At-Most-K' constraint using the
-    correct and efficient sequential counter method provided by the user.
-
-    This encoding is fully compatible with DIMACS conversion.
-
-    Args:
-        bool_vars: A list of Z3 boolean variables.
-        k: The maximum number of variables that can be true.
-        name: A prefix for the names of the auxiliary variables.
-
-    Returns:
-        A list of Z3 clauses that can be added to a solver.
+    AMK via sequential counter.
+    Creates aux s[i][j] meaning: among first i+1 vars, count ≥ j+1.
+    Returns a flat list of clauses; add with solver.add(*clauses).
     """
     n = len(bool_vars)
-    constraints = []
+    constraints: List[BoolRef] = []
+    if n == 0:
+        return constraints
+    if k <= 0:
+        # sum ≤ 0 → all false
+        constraints += [Not(v) for v in bool_vars]
+        return constraints
+    if k >= n:
+        # sum ≤ n → no constraint needed
+        return constraints
 
-    # s[i][j] is an auxiliary variable meaning "at least j+1 of the first i+1
-    # variables (bool_vars[0]...bool_vars[i]) are True".
-    # The matrix size is (n-1) x k because the state is only needed up to the
-    # second-to-last variable to constrain the final one.
+    # s[i][j] := (first i+1 vars contain at least j+1 Trues), i=0..n-2, j=0..k-1
     s = [[Bool(f"{name}_{i}_{j}") for j in range(k)] for i in range(n - 1)]
 
-    # --- Base Case for the first variable (i=0) ---
-    # If bool_vars[0] is true, then s[0][0] (count >= 1) must be true.
-    # Clause: Not(bool_vars[0]) Or s[0][0]
-    constraints.append(Or(Not(bool_vars[0]), s[0][0]))
-
-    # The count for the first variable can't be 2 or more.
-    # Clause: Not(s[0][j]) for j from 1 to k-1
+    # base for i=0
+    constraints.append(Or(Not(bool_vars[0]), s[0][0]))  # b0 → s00
     for j in range(1, k):
-        constraints.append(Not(s[0][j]))
+        constraints.append(Not(s[0][j]))                # cannot have ≥2 at i=0
 
-    # --- Recursive step for variables i = 1 to n-2 ---
+    # transitions for i=1..n-2
     for i in range(1, n - 1):
-        # The count is >= 1 if the previous count was >= 1 OR the current var is true.
-        # (Not(bool_vars[i]) Or s[i][0]) AND (Not(s[i-1][0]) Or s[i][0])
-        constraints.append(Or(Not(bool_vars[i]), s[i][0]))
-        constraints.append(Or(Not(s[i-1][0]), s[i][0]))
-
-        # If the count of the first `i` variables is already `k`, then `bool_vars[i]` must be false.
-        # Clause: Not(bool_vars[i]) Or Not(s[i-1][k-1])
-        constraints.append(Or(Not(bool_vars[i]), Not(s[i-1][k-1])))
-
-        # The count is >= j+1 if (the previous count was >= j+1) OR (the current var is true AND the previous count was >= j)
+        constraints.append(Or(Not(bool_vars[i]), s[i][0]))      # bi → si0
+        constraints.append(Or(Not(s[i-1][0]), s[i][0]))         # si-1,0 → si0
+        constraints.append(Or(Not(bool_vars[i]), Not(s[i-1][k-1])))  # block overflow
         for j in range(1, k):
+            # si,j becomes true if (bi ∧ si-1,j-1) or si-1,j
             constraints.append(Or(Not(bool_vars[i]), Not(s[i-1][j-1]), s[i][j]))
             constraints.append(Or(Not(s[i-1][j]), s[i][j]))
 
-    # --- Final constraint for the last variable (n-1) ---
-    # If the count of the first `n-1` variables is already `k`, then the last variable `bool_vars[n-1]` must be false.
+    # final guard on last var: bn-1 → ¬s[n-2][k-1]
     constraints.append(Or(Not(bool_vars[n-1]), Not(s[n-2][k-1])))
 
-    # For adding to a Z3 solver, a list of individual clauses is standard and often more flexible.
     return constraints
 
-def equiv(a: BoolRef, b: BoolRef) -> BoolRef:
-    """Bi-implication."""
-    return And(Implies(a,b), Implies(b,a))
+# ---------- One-hot comparators ----------
+def equal_onehot(x: List[BoolRef], y: List[BoolRef]) -> BoolRef:
+    """One-hot equality: element-wise equivalence (assume EO elsewhere)."""
+    return And(*[xi == yi for xi, yi in zip(x, y)])
 
-def less_or_equal_onehot(a: List[BoolRef], b: List[BoolRef]) -> BoolRef:
-    # a <= b in index order for one-hot vectors
-    # For each i: a_i -> OR_{j>=i} b_j
-    return And(*[
-        Implies(a_i, Or(*b[i:])) for i, a_i in enumerate(a)
-    ])
+def less_onehot_strict(x: List[BoolRef], y: List[BoolRef]) -> BoolRef:
+    """
+    Strict compare for one-hots: index(x) < index(y).
+    Encodes ⋁_i ( x_i ∧ ⋁_{j>i} y_j ).
+    """
+    n = len(x)
+    return Or(*[And(x[i], Or(*y[i+1:])) for i in range(n - 1)])
+
+def lex_less_onehot_seq(X: List[List[BoolRef]], Y: List[List[BoolRef]]) -> BoolRef:
+    """
+    Strict lex on sequences of one-hots: X <_lex Y.
+    Encodes ⋁_k ( prefix_eq(0..k-1) ∧ (X[k] < Y[k]) ).
+    """
+    terms = []
+    for k in range(len(X)):
+        prefix_eq = And(*[equal_onehot(X[i], Y[i]) for i in range(k)])
+        terms.append(And(prefix_eq, less_onehot_strict(X[k], Y[k])))
+    return Or(*terms)
+
+# ---------- Derived one-hots from RR pos + match table ----------
+def team_onehot_from_pos(
+    table: List[List[int]],
+    pos: List[List[List[BoolRef]]],
+    w: int,
+    p: int,
+    n: int,
+    P: int,
+) -> List[BoolRef]:
+    """
+    Team identity at slot (w,p) given pos[w][p] (one-hot over k) and a table (Home/Away).
+    For each team t, returns OR_k: (pos[w][p][k] ∧ table[w][k]==t).
+    Produces a length-n one-hot vector over teams (pure Bool).
+    """
+    return [
+        Or(*[pos[w][p][k] for k in range(P) if table[w][k] == t])
+        for t in range(1, n + 1)
+    ]
