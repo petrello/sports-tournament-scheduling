@@ -41,22 +41,40 @@ EXPERIMENTS_CONFIG = {
     },
 
     # Experiments with Round-Robin method
-    'rr-minisat': {
+    'rr-nosymm-minisat': {
         'model': 'rr',
         'sat_solver': 'minisat',
         'use_symmetry_breaking': 'false',
         'optimization': 'false',
     },
-    'rr-glucose': {
+    'rr-nosymm-glucose': {
         'model': 'rr',
         'sat_solver': 'glucose',
         'use_symmetry_breaking': 'false',
         'optimization': 'false',
     },
+    'rr-nosymm-opt-z3': {
+        'model': 'rr',
+        'sat_solver': 'minisat',           # ignored for optimization
+        'use_symmetry_breaking': 'false',  
+        'optimization': 'true',
+    },
+    'rr-minisat': {
+        'model': 'rr',
+        'sat_solver': 'minisat',
+        'use_symmetry_breaking': 'true',
+        'optimization': 'false',
+    },
+    'rr-glucose': {
+        'model': 'rr',
+        'sat_solver': 'glucose',
+        'use_symmetry_breaking': 'true',
+        'optimization': 'false',
+    },
     'rr-opt-z3': {
         'model': 'rr',
         'sat_solver': 'minisat',           # ignored for optimization
-        'use_symmetry_breaking': 'false',  # ignored for optimization
+        'use_symmetry_breaking': 'true',  
         'optimization': 'true',
     },
 }
