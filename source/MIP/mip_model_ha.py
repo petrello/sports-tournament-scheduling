@@ -55,17 +55,16 @@ class MIPModelHA:
         #====================================================================
         # CONSTRAINTS
         #====================================================================
-        # %--- Main constraint: every unordered pair occurs exactly once
-        # %    linearize (i,j) to integer (i-1)*n + j, then all-different
-        for w in Weeks:
-            for p in Periods:
-                model += Home[(p, w)] == pl.lpSum(i * y[(i, j, w, p)] for (i, j) in Pairs), f"link_H_p{p}_w{w}"
-                model += Away[(p, w)] == pl.lpSum(j * y[(i, j, w, p)] for (i, j) in Pairs), f"link_A_p{p}_w{w}"
-
         #--- Main constraint: exactly one match per slot
         for w in Weeks:
             for p in Periods:
                 model += pl.lpSum(y[(i, j, w, p)] for (i, j) in Pairs) == 1, f"slot_unique_w{w}_p{p}"
+                
+        # %--- Main constraint: link Home/Away integers to the chosen pair in each slot
+        for w in Weeks:
+            for p in Periods:
+                model += Home[(p, w)] == pl.lpSum(i * y[(i, j, w, p)] for (i, j) in Pairs), f"link_H_p{p}_w{w}"
+                model += Away[(p, w)] == pl.lpSum(j * y[(i, j, w, p)] for (i, j) in Pairs), f"link_A_p{p}_w{w}"
 
         #--- Main constraint: every unordered pair {i,j} occurs exactly once
         if use_symmetry_breaking_constraints:
