@@ -105,49 +105,6 @@ class MIPModelRR:
                 if optimize:
                     model += swap[(1, p)] == 0, f"week1_fix_swap_p{p}"
 
-            # # Build integer expressions lHome[w,p] and lAway[w,p] as linear combinations
-            # lHome = {
-            #     (w, p): pl.lpSum(Home[w - 1][k - 1] * pos[(w, p, k)] for k in Ks)
-            #     for w in Weeks for p in Periods
-            # }
-            # lAway = {
-            #     (w, p): pl.lpSum(Away[w - 1][k - 1] * pos[(w, p, k)] for k in Ks)
-            #     for w in Weeks for p in Periods
-            # }
-
-            # M = n  # big-M (safe upper bound for differences in team ids)
-            #
-            # #--- Symmetry breaking: strict lex between periods (rows)
-            # for p_idx in range(1, P):
-            #     Xp = [lAway[(w, p_idx)] for w in Weeks] + [lHome[(w, p_idx)] for w in Weeks]
-            #     Yp = [lAway[(w, p_idx + 1)] for w in Weeks] + [lHome[(w, p_idx + 1)] for w in Weeks]
-            #
-            #     L = len(Xp)
-            #     diff_vars = [pl.LpVariable(f"lexdiff_period{p_idx}_pos{k}", cat=pl.LpBinary) for k in range(L)]
-            #     model += pl.lpSum(diff_vars) == 1, f"lex_period_decision_p{p_idx}"
-            #
-            #     for k in range(L):
-            #         for j in range(k):
-            #             model += Xp[j] - Yp[j] <= M * (1 - diff_vars[k]), f"lex_eq1_p{p_idx}_k{k}_j{j}"
-            #             model += Yp[j] - Xp[j] <= M * (1 - diff_vars[k]), f"lex_eq2_p{p_idx}_k{k}_j{j}"
-            #         model += Xp[k] - Yp[k] <= -1 + M * (1 - diff_vars[k]), f"lex_less_p{p_idx}_k{k}"
-            #
-            # #--- Symmetry breaking: strict lex between weeks (columns)
-            # for w_idx in range(1, W):
-            #     Xw = [lAway[(w_idx, p)] for p in Periods] + [lHome[(w_idx, p)] for p in Periods]
-            #     Yw = [lAway[(w_idx + 1, p)] for p in Periods] + [lHome[(w_idx + 1, p)] for p in Periods]
-            #
-            #     L = len(Xw)
-            #     diff_vars = [pl.LpVariable(f"lexdiff_week{w_idx}_pos{k}", cat=pl.LpBinary) for k in range(L)]
-            #     model += pl.lpSum(diff_vars) == 1, f"lex_week_decision_w{w_idx}"
-            #
-            #     for k in range(L):
-            #         for j in range(k):
-            #             model += Xw[j] - Yw[j] <= M * (1 - diff_vars[k]), f"lex_eq1_w{w_idx}_k{k}_j{j}"
-            #             model += Yw[j] - Xw[j] <= M * (1 - diff_vars[k]), f"lex_eq2_w{w_idx}_k{k}_j{j}"
-            #         model += Xw[k] - Yw[k] <= -1 + M * (1 - diff_vars[k]), f"lex_less_w{w_idx}_k{k}"
-
-
         # ====================================================================
         # OPTIMIZATION
         # ====================================================================
