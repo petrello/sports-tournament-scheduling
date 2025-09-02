@@ -64,9 +64,7 @@ def optimise_rr(n: int,
 
         # per–team bounds
         for t in range(1, n + 1):
-            # sum(H[t,*]) ≤ U
             s.add(*at_most_k(H[t], U, name=f"home_le_t{t}_U{U}"))
-            # sum(H[t,*]) ≥ L  ⇔  sum(~H[t,*]) ≤ W-L
             s.add(*at_most_k([z3.Not(h) for h in H[t]], W - L, name=f"home_ge_t{t}_L{L}"))
 
         res = s.check()
