@@ -65,9 +65,6 @@ class SMTModelRR:
         #====================================================================
         # pos[w][p] ∈ {1..P} chooses which match index k is placed at (w,p)
         pos: List[List[Int]] = [[Int(f"pos_{w+1}_{p+1}") for p in range(P)] for w in range(W)]
-        for w in range(W):
-            for p in range(P):
-                solver.add(And(1 <= pos[w][p], pos[w][p] <= P))
 
         # swap[w][p] toggles A↔B at (w,p) (only when optimizing balance)
         swap: Optional[List[List[Bool]]] = (
@@ -78,7 +75,11 @@ class SMTModelRR:
         #====================================================================
         # CONSTRAINTS
         #====================================================================
-
+        #--- Main constraint: set domains
+        for w in range(W):
+            for p in range(P):
+                solver.add(And(1 <= pos[w][p], pos[w][p] <= P))
+        
         #--- Main constraint: per-week permutation of match indices
         for w in range(W):
             solver.add(Distinct(*pos[w]))
