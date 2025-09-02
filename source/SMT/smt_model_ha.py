@@ -42,14 +42,15 @@ class SMTModelHA:
             for p in range(P)
         ]
 
-        for p in range(P):
-            for w in range(W):
-                solver.add(And(1 <= Home[p][w], Home[p][w] <= n))
-                solver.add(And(1 <= Away[p][w], Away[p][w] <= n))
 
         #====================================================================
         # CONSTRAINTS
         #====================================================================
+        #--- Main constraint: set domains
+        for p in range(P):
+            for w in range(W):
+                solver.add(And(1 <= Home[p][w], Home[p][w] <= n))
+                solver.add(And(1 <= Away[p][w], Away[p][w] <= n))
 
         #--- Main constraint: every unordered pair {i,j} occurs exactly once
         pair_codes = []
