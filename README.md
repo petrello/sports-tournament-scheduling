@@ -114,7 +114,7 @@ This project uses Docker Compose to simplify container management.
 
 Thanks to the volume mounts configured in `docker-compose.yaml`, your local project directory is synchronized with the `/home/appuser/cdmo` directory inside the container.
 
-* **Running Experiments:** Execute your `solve_..._all.py` scripts from the interactive shell.
+* * **Running Experiments:** Execute all solvers with `python run_all.py` (parallel) or `python run_all.py --sequential` (CP → SAT → SMT → MIP). Individual solver scripts: `python source/{CP|SAT|SMT|MIP}/solve_*_all.py`
 * **Viewing Results:** Any files saved to the `./res` directory by the scripts inside the container will **automatically appear** in the `./res` folder on your local machine.
 * **Editing Code:** You can edit the source code on your local machine using your favorite IDE, and the changes will be immediately reflected inside the container.
 
