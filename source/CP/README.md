@@ -33,7 +33,7 @@ This directory contains MiniZinc models to solve the STS problem using constrain
    Results are written to `../../res/CP/` as JSON files.
 2. To solve a single instance manually:
    ```bash
-   python solve_cp_instance.py <instance.dzn> <model> <solver> <optimization> <name>
+   python solve_cp_instance.py <instance.dzn> <model_path> <gecode|chuffed> <optimization> <name>
    ```
 3. Solutions can be checked with:
    ```bash
