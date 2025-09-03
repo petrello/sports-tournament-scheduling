@@ -9,10 +9,10 @@ The models in this folder solve the STS problem using PuLP. Two formulations are
 
 `solve_mip_all.py` defines a set of experiments that combine the model type with different solvers and options:
 
-- `ha-cbc`, `ha-glpk`, `ha-highs` – HA model solved with CBC, GLPK or HiGHS.
-- `ha-nosymm-cbc`, `ha-nosymm-glpk`, `ha-nosymm-highs` – HA model without symmetry breaking constraints.
-- `rr-cbc`, `rr-glpk`, `rr-highs` – RR decision variant.
-- `rr-opt-cbc`, `rr-opt-glpk`, `rr-opt-highs` – RR optimization variant.
+- `ha-glpk`, `ha-highs` – HA model solved with GLPK or HiGHS.
+- `ha-nosymm-glpk`, `ha-nosymm-highs` – HA model without symmetry breaking constraints.
+- `rr-glpk`, `rr-highs` – RR decision variant.
+- `rr-opt-glpk`, `rr-opt-highs` – RR optimization variant.
 
 ## Running the tests
 
@@ -23,7 +23,7 @@ The models in this folder solve the STS problem using PuLP. Two formulations are
    Output files are stored in `../../res/MIP/`.
 2. To solve a single instance:
    ```bash
-   python solve_mip_instance.py <ha|rr> <cbc|glpk|highs> <instance.txt> <use_symmetry_breaking> <optimization> <name>
+   python solve_mip_instance.py <ha|rr> <glpk|highs> <instance.txt> <use_symmetry_breaking> <optimization> <name>
    ```
 3. Validate produced solutions using:
    ```bash
