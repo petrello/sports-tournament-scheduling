@@ -76,7 +76,9 @@ a solution can be obtained within the time limit, i.e. $5$ minutes.
 ├── LICENSE
 ├── README.md
 ├── requirements.txt     # Python dependencies for the project
-└── check_solution.py    # Checks the correctness of the computed solutions 
+├── solution_checker.py  # Checks the correctness of the computed solutions
+├── solve_all.py         # Solve all the instances for each model for each paradigm
+└── Report.pdf           # Project report   
 ```
 
 ## Getting Started with Docker
