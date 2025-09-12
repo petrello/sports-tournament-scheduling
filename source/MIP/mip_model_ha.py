@@ -110,36 +110,4 @@ class MIPModelHA:
             for p in Periods:
                 model += y[(2 * p - 1, 2 * p, 1, p)] == 1, f"fix_week1_pair_p{p}"
 
-
-            # M = n  # big-M (safe upper bound for differences in team ids)
-            #
-            # #--- Symmetry breaking: strict lex between periods (rows)
-            # for p in range(1, P):
-            #     Xp = [Away[(p, w)] for w in Weeks] + [Home[(p, w)] for w in Weeks]
-            #     Yp = [Away[(p + 1, w)] for w in Weeks] + [Home[(p + 1, w)] for w in Weeks]
-            #     L = len(Xp)
-            #     diff_vars = [pl.LpVariable(f"lexdiff_period{p}_pos{k}", cat=pl.LpBinary) for k in range(L)]
-            #     # exactly one deciding position
-            #     model += pl.lpSum(diff_vars) == 1, f"lex_period_decision_p{p}"
-            #     for k in range(L):
-            #         # equality for all j<k when diff at k
-            #         for j in range(k):
-            #             model += Xp[j] - Yp[j] <= 0 + M * (1 - diff_vars[k]), f"lex_eq1_p{p}_k{k}_j{j}"
-            #             model += Yp[j] - Xp[j] <= 0 + M * (1 - diff_vars[k]), f"lex_eq2_p{p}_k{k}_j{j}"
-            #         # strict less at position k when diff at k
-            #         model += Xp[k] - Yp[k] <= -1 + M * (1 - diff_vars[k]), f"lex_less_p{p}_k{k}"
-            #
-            # #--- Symmetry breaking: strict lex between weeks (columns)
-            # for w in range(1, W):
-            #     Xw = [Away[(p, w)] for p in Periods] + [Home[(p, w)] for p in Periods]
-            #     Yw = [Away[(p, w + 1)] for p in Periods] + [Home[(p, w + 1)] for p in Periods]
-            #     L = len(Xw)
-            #     diff_vars = [pl.LpVariable(f"lexdiff_week{w}_pos{k}", cat=pl.LpBinary) for k in range(L)]
-            #     model += pl.lpSum(diff_vars) == 1, f"lex_week_decision_w{w}"
-            #     for k in range(L):
-            #         for j in range(k):
-            #             model += Xw[j] - Yw[j] <= 0 + M * (1 - diff_vars[k]), f"lex_eq1_w{w}_k{k}_j{j}"
-            #             model += Yw[j] - Xw[j] <= 0 + M * (1 - diff_vars[k]), f"lex_eq2_w{w}_k{k}_j{j}"
-            #         model += Xw[k] - Yw[k] <= -1 + M * (1 - diff_vars[k]), f"lex_less_w{w}_k{k}"
-
         return model, Home, Away
